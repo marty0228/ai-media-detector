@@ -144,3 +144,41 @@ vite.config.ts.timestamp-*
 Thumbs.db
 .vscode/
 .idea/
+
+# Data directories (절대 커밋하지 않음)
+data/raw/
+data/processed/
+data/splits/
+*.csv
+*.json
+*.parquet
+*.h5
+*.pkl
+
+# Large model files
+models/*.pth
+models/*.h5
+models/*.ckpt
+models/*.safetensors
+
+# Cache
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environment
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 단, 샘플 데이터는 포함
+!data_samples/
