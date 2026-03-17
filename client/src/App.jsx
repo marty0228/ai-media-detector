@@ -56,7 +56,7 @@ export default function App() {
     setPreviewDataUrl(optimizedPreview);
   };
 
-  // 분석 시작 핸들러 (실제 API 호출 혹은 Mock 데이터 활용)
+  // 분석 시작 핸들러 (실제 API 호출)
   const handleAnalyze = async () => {
     if (!selectedFile) return;
 
@@ -64,10 +64,10 @@ export default function App() {
       setIsAnalyzing(true);
 
       const formData = new FormData();
-      formData.append("image", selectedFile);
+      formData.append("file", selectedFile);
 
       // 실제 API 엔드포인트 호출 (/analyze)
-      const response = await fetch("/analyze", {
+      const response = await fetch("http://localhost:8000/api/detect", {
         method: "POST",
         body: formData,
       });
@@ -85,12 +85,56 @@ export default function App() {
         throw new Error(errorMessage);
       }
 
-      // API 통신 성공 시 받은 데이터 처리
-      const nextResult = await response.json();
+      // API 통신 성공 시 받은 데이터 처리 (기존 코드 주석 처리)
+      // const nextResult = await response.json();
+      // const nextFileInfo = {
+      //   name: selectedFile.name,
+      //   type: selectedFile.type || "Unknown",
+      //   size: formatFileSize(selectedFile.size),
+      // };
+
+      // // 분석 결과, 파일 정보 등을 로컬 스토리지에 캐싱
+      // localStorage.setItem(STORAGE_KEYS.result, JSON.stringify(nextResult));
+      // localStorage.setItem(STORAGE_KEYS.file, JSON.stringify(nextFileInfo));
+      // if (previewDataUrl) {
+      //   localStorage.setItem(STORAGE_KEYS.preview, previewDataUrl);
+      // } else {
+      //   localStorage.removeItem(STORAGE_KEYS.preview);
+      // }
+
+      // API 응답을 defaultResult 형태에 맞게 가공합니다.
+      const apiData = await response.json();
+      const predictionObj = apiData.prediction;
+      
+      const fileSize = formatFileSize(selectedFile.size);
       const nextFileInfo = {
-        name: selectedFile.name,
+        name: selectedFile.name || apiData.filename || "Unknown",
         type: selectedFile.type || "Unknown",
-        size: formatFileSize(selectedFile.size),
+        size: fileSize,
+      };
+
+      // 퍼센트 문자열(예: "95.00%")에서 숫자만 추출
+      const parsedConfidence = parseFloat(predictionObj.confidence);
+      
+      const nextResult = {
+        ...defaultResult, // 기존 구조(factors 등)를 유지
+        summary: {
+          ...defaultResult.summary,
+          finalScore: parsedConfidence, 
+          // 0 이면 진짜, 1 이면 가짜
+          verdict: predictionObj.predicted_idx === 1 ? "AI-GENERATED" : "AUTHENTIC",
+          confidence: parsedConfidence / 100, // 0.95 형태 
+          description: "This result is loaded from our AI model prediction backend.",
+        },
+        notes: {
+          ...defaultResult.notes,
+          sideItems: [
+            { label: "Upload State", value: "SUCCESS" },
+            { label: "Result Source", value: "AI MODEL API" },
+            { label: "Factor Layout", value: "5 FACTORS" },
+            { label: "API Hook", value: "CONNECTED" },
+          ],
+        }
       };
 
       // 분석 결과, 파일 정보 등을 로컬 스토리지에 캐싱
