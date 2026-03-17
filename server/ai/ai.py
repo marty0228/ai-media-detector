@@ -40,7 +40,11 @@ def predict_image(image_bytes: bytes) -> dict:
         # 가장 점수(score)가 높은 첫 번째 결과를 가져옵니다.
         top_prediction = results[0]
         label = top_prediction['label']
-        score = top_prediction['score']
+        raw_score = top_prediction['score']
+        
+        # 점수 정규화 (최소 50% 보장 상태에서 0~100%로 스케일링)
+        # 0.5~1.0 범위를 0.0~1.0 으로 변환 ( (x - 0.5) * 2 )
+        normalized_score = max(0.0, min(1.0, (raw_score - 0.5) * 2.0))
         
         # 라벨에 따라 결과를 매핑합니다.
         # 결과값에 따라 인덱스 지정: 가짜(artificial/AI) = 1, 진짜(human/real) = 0
@@ -50,7 +54,7 @@ def predict_image(image_bytes: bytes) -> dict:
         return {
             "prediction": prediction_text,
             "predicted_idx": predicted_idx,  # 0 or 1
-            "confidence": f"{score * 100:.2f}%"
+            "confidence": f"{normalized_score * 100:.2f}%"
         }
         
     except Exception as e:

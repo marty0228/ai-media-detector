@@ -122,17 +122,17 @@ export default function App() {
           ...defaultResult.summary,
           finalScore: parsedConfidence, 
           // 0 이면 진짜, 1 이면 가짜
-          verdict: predictionObj.predicted_idx === 1 ? "AI-GENERATED" : "AUTHENTIC",
+          verdict: predictionObj.predicted_idx === 1 ? "AI 생성 의심" : "실제 사진",
           confidence: parsedConfidence / 100, // 0.95 형태 
-          description: "This result is loaded from our AI model prediction backend.",
+          description: "본 분석 결과는 AI 예측 모델 백엔드로부터 응답받은 실제 추론 데이터입니다.",
         },
         notes: {
           ...defaultResult.notes,
           sideItems: [
-            { label: "Upload State", value: "SUCCESS" },
-            { label: "Result Source", value: "AI MODEL API" },
-            { label: "Factor Layout", value: "5 FACTORS" },
-            { label: "API Hook", value: "CONNECTED" },
+            { label: "업로드 상태", value: "성공" },
+            { label: "분석 출처", value: "AI 모델 API" },
+            { label: "제공 요소", value: "5 가지 구조" },
+            { label: "API 연결", value: "연결 성공" },
           ],
         }
       };

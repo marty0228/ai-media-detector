@@ -58,21 +58,20 @@ export function UploadPage({
             letterSpacing: "0.15em",
           }}
         >
-          AI-POWERED
+          AI 기반
         </div>
         <h1
-          className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight"
+          className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight break-keep"
           style={{ color: COLORS.primary, fontFamily: "Manrope, sans-serif" }}
         >
-          Authenticity in the Age of Synthesis
+          합성 시대의 진위 판독기
         </h1>
         <p
-          className="text-lg leading-relaxed"
+          className="text-lg leading-relaxed break-keep"
           style={{ color: COLORS.onSurfaceVariant }}
         >
-          Utilizing state-of-the-art neural networks to verify digital
-          provenance. Upload any image to receive a comprehensive forensic
-          analysis of its origin and integrity.
+          최첨단 신경망 모델을 활용하여 디지털 이미지의 진위를 검증합니다.
+          어떤 사진이든 업로드하여 기원과 무결성에 대한 종합적인 포렌식 분석 리포트를 받아보세요.
         </p>
       </section>
 
@@ -141,18 +140,16 @@ export function UploadPage({
                 fontFamily: "Manrope, sans-serif",
               }}
             >
-              Drop image to analyze
+              이미지를 놓아서 분석하기
             </h3>
             <p className="mb-3" style={{ color: COLORS.onSurfaceVariant }}>
-              PNG, JPG, or WEBP up to 25MB
+              최대 25MB 이하의 PNG, JPG, WEBP 허용
             </p>
             <p
-              className="text-sm mb-8 max-w-xl"
+              className="text-sm mb-8 max-w-xl break-keep"
               style={{ color: COLORS.outline }}
             >
-              The current prototype organizes results into five explainable
-              factors: provenance, metadata, external search, visual anomalies,
-              and forensic patterns.
+              현재 버전은 출처, 메타데이터, 외부 검색, 시각적 오류, 포렌식 패턴이라는 5가지 설명 가능한 구성 요소로 분석 결과를 정리하여 보여줍니다.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -164,7 +161,7 @@ export function UploadPage({
                   background: `linear-gradient(135deg, ${COLORS.primary}, ${COLORS.primaryContainer})`,
                 }}
               >
-                Choose Image
+                이미지 선택
                 <MaterialIcon className="text-sm">arrow_forward</MaterialIcon>
               </button>
 
@@ -180,7 +177,7 @@ export function UploadPage({
                   opacity: !hasFile || isAnalyzing ? 0.5 : 1,
                 }}
               >
-                {isAnalyzing ? "Analyzing..." : "Analyze Image"}
+                {isAnalyzing ? "분석 중..." : "AI 이미지 판독"}
                 <MaterialIcon className="text-sm">
                   {isAnalyzing ? "hourglass_top" : "analytics"}
                 </MaterialIcon>
@@ -207,11 +204,10 @@ export function UploadPage({
                   fontFamily: "Manrope, sans-serif",
                 }}
               >
-                Selected Image
+                선택된 이미지
               </h3>
               <p className="text-sm" style={{ color: COLORS.onSurfaceVariant }}>
-                Preview the uploaded image before moving to the result
-                dashboard.
+                결과 대시보드로 이동하기 전 업로드된 이미지를 미리 봅니다.
               </p>
             </div>
             <span
@@ -222,7 +218,7 @@ export function UploadPage({
                 letterSpacing: "0.15em",
               }}
             >
-              {hasFile ? "Ready" : "No File"}
+              {hasFile ? "준비 완료" : "업로드 대기"}
             </span>
           </div>
 
@@ -256,13 +252,13 @@ export function UploadPage({
                     fontFamily: "Manrope, sans-serif",
                   }}
                 >
-                  No image selected
+                  이미지가 없습니다
                 </h4>
                 <p
                   className="text-sm max-w-md"
                   style={{ color: COLORS.onSurfaceVariant }}
                 >
-                  Choose an image to enable preview and prototype analysis.
+                  우측 혹은 위에서 버튼을 눌러 이미지를 탐색기에 첨부해 주세요.
                 </p>
               </div>
             )}
@@ -270,13 +266,13 @@ export function UploadPage({
 
           {hasFile && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-              <InfoCard label="File Name" value={selectedFile.name} breakAll />
+              <InfoCard label="파일 이름" value={selectedFile.name} breakAll />
               <InfoCard
-                label="File Type"
-                value={selectedFile.type || "Unknown"}
+                label="파일 확장자"
+                value={selectedFile.type || "알 수 없음"}
               />
               <InfoCard
-                label="File Size"
+                label="파일 용량"
                 value={formatFileSize(selectedFile.size)}
               />
             </div>
@@ -294,41 +290,39 @@ export function UploadPage({
             className="text-2xl font-bold mb-2"
             style={{ color: COLORS.primary, fontFamily: "Manrope, sans-serif" }}
           >
-            Five-Factor Structure
+            5-요소 분석 모델
           </h3>
           <p
-            className="text-sm mb-6"
+            className="text-sm mb-6 break-keep"
             style={{ color: COLORS.onSurfaceVariant }}
           >
-            The result page is now organized around your XAI reporting
-            structure, so it can later consume backend output without changing
-            the layout.
+            분석 결과 페이지는 설명 가능한 AI(XAI) 구성 요소를 기반으로 정렬됩니다. 백엔드 알고리즘에서 어떠한 포멧의 데이터가 넘어오더라도 이 동일한 시각적 구조에서 정보를 깔끔하게 열람할 수 있습니다.
           </p>
 
           <div className="space-y-3">
             <FactorRow
-              title="Provenance Verification"
-              subtitle="Origin and creation history"
+              title="출처 검증"
+              subtitle="사진의 원본 출처 및 생성 이력 파악"
               icon="shield_lock"
             />
             <FactorRow
-              title="Metadata Analysis"
-              subtitle="EXIF and header consistency"
+              title="메타데이터 분석"
+              subtitle="EXIF 정보 및 카메라 헤더 일관성 검사"
               icon="badge"
             />
             <FactorRow
-              title="External Search Validation"
-              subtitle="Cross-source match review"
+              title="외부 검색 검증"
+              subtitle="웹 크롤링을 통한 원본 사진 대조"
               icon="travel_explore"
             />
             <FactorRow
-              title="Visual Anomaly Analysis"
-              subtitle="Human-interpretable artifact check"
+              title="시각적 이상 분석"
+              subtitle="사물 왜곡 현상 및 인간 식별 가능 단계 오류 확인"
               icon="visibility"
             />
             <FactorRow
-              title="Forensic Pattern Analysis"
-              subtitle="Noise, compression, and pixel cues"
+              title="포렌식 패턴 분석"
+              subtitle="압축 알고리즘, 노이즈, 픽셀 징후 정밀 판독"
               icon="biotech"
             />
           </div>

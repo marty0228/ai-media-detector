@@ -14,7 +14,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
         style={{ color: COLORS.primary }}
       >
         <MaterialIcon className="text-base">arrow_back</MaterialIcon>
-        Back to Upload
+        업로드 페이지로 돌아가기
       </button>
 
       <section className="space-y-8">
@@ -29,7 +29,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               }}
             >
               <MaterialIcon className="text-sm">science</MaterialIcon>
-              Prototype Output
+              AI 검증 리포트
             </div>
             <h2
               className="text-4xl font-extrabold mb-2"
@@ -38,7 +38,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 fontFamily: "Manrope, sans-serif",
               }}
             >
-              Analysis Result
+              종합 분석 결과
             </h2>
             <p style={{ color: COLORS.onSurfaceVariant }}>
               {result.summary.description}
@@ -52,9 +52,9 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
             <div>
               <span
                 className="text-xs font-bold uppercase opacity-70"
-                style={{ letterSpacing: "0.18em" }}
+                style={{ letterSpacing: "0.15em" }}
               >
-                Final Score
+                예측 신뢰도
               </span>
               <div
                 className="text-5xl font-black mt-1"
@@ -71,7 +71,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               >
                 {result.summary.verdict}
               </span>
-              <span>{`Confidence: ${result.summary.confidence}`}</span>
+              <span>{`신뢰도 세부수치: ${result.summary.confidence}`}</span>
             </div>
           </div>
         </div>
@@ -93,13 +93,13 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                     fontFamily: "Manrope, sans-serif",
                   }}
                 >
-                  Uploaded Media
+                  업로드된 용의선상 미디어
                 </h3>
                 <p
-                  className="text-sm"
+                  className="text-sm break-keep"
                   style={{ color: COLORS.onSurfaceVariant }}
                 >
-                  Current input attached to the dashboard.
+                  현재 백엔드 서버로 전송되어 분석된 원본 이미지입니다.
                 </p>
               </div>
               <span
@@ -110,7 +110,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                   letterSpacing: "0.15em",
                 }}
               >
-                Input
+                고객 입력
               </span>
             </div>
 
@@ -144,14 +144,13 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                       fontFamily: "Manrope, sans-serif",
                     }}
                   >
-                    No preview available
+                    미리보기 없음
                   </h4>
                   <p
-                    className="text-sm"
+                    className="text-sm break-keep"
                     style={{ color: COLORS.onSurfaceVariant }}
                   >
-                    Upload an image from the first page to attach it to the
-                    dashboard.
+                    첫 페이지에서 이미지를 업로드해야 이곳에서 미리보기가 제공됩니다.
                   </p>
                 </div>
               )}
@@ -159,13 +158,13 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
 
             <div className="grid grid-cols-1 gap-4 mt-5">
               <InfoCard
-                label="File Name"
+                label="파일 이름"
                 value={fileInfo.name || "Unknown"}
                 breakAll
               />
               <div className="grid grid-cols-2 gap-4">
-                <InfoCard label="Type" value={fileInfo.type || "Unknown"} />
-                <InfoCard label="Size" value={fileInfo.size || "Unknown"} />
+                <InfoCard label="확장자" value={fileInfo.type || "Unknown"} />
+                <InfoCard label="파일 용량" value={fileInfo.size || "Unknown"} />
               </div>
             </div>
           </div>
@@ -217,7 +216,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               >
-                Review Summary
+                결과 개요 보기
               </button>
               <button
                 className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border"
@@ -230,7 +229,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 type="button"
                 onClick={onBack}
               >
-                Test Another Image
+                다른 이미지 검사하기
               </button>
             </div>
           </div>
@@ -256,8 +255,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
             >
               {result.notes.sideTitle}
             </h4>
-            <p className="text-sm" style={{ color: COLORS.onSurfaceVariant }}>
-              This block is ready to display backend-related status later.
+            <p className="text-sm break-keep" style={{ color: COLORS.onSurfaceVariant }}>
+              향후 백엔드로부터 전달받는 시스템 메타데이터 및 연결 상태를 표기하는 공간입니다.
             </p>
           </div>
           <div className="mt-8 flex flex-col gap-3">

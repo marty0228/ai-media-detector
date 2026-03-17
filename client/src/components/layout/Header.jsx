@@ -19,22 +19,22 @@ export function Header() {
           className="font-extrabold text-xl tracking-tight"
           style={{ color: COLORS.primary, fontFamily: "Manrope, sans-serif" }}
         >
-          AI Authenticator
+          AI 판독기
         </span>
       </div>
       <div className="flex items-center gap-6">
         <nav
-          className="hidden md:flex gap-8 text-sm font-semibold uppercase"
-          style={{ letterSpacing: "0.18em", color: COLORS.onSurfaceVariant }}
+          className="hidden md:flex gap-8 text-sm font-semibold"
+          style={{ letterSpacing: "0.1em", color: COLORS.onSurfaceVariant }}
         >
           <a href="#" className="transition-colors hover:opacity-80">
-            Forensics
+            포렌식 분석
           </a>
           <a href="#" className="transition-colors hover:opacity-80">
-            Case Studies
+            적용 사례
           </a>
           <a href="#" className="transition-colors hover:opacity-80">
-            API
+            API 연동
           </a>
         </nav>
         <MaterialIcon

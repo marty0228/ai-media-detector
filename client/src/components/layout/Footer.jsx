@@ -15,36 +15,35 @@ export function Footer() {
               security
             </MaterialIcon>
             <span
-              className="font-bold text-lg uppercase"
+              className="font-bold text-lg tracking-tight"
               style={{
                 color: COLORS.primary,
                 fontFamily: "Manrope, sans-serif",
                 letterSpacing: "-0.03em",
               }}
             >
-              AI Authenticator
+              AI 판독기
             </span>
           </div>
           <p
             className="text-sm text-center md:text-left max-w-sm"
             style={{ color: COLORS.onSurfaceVariant }}
           >
-            © 2024 AI Authenticator. Analysis is probabilistic and for
-            informational purposes only.
+            © 2024 AI 판독기. 본 분석 결과는 확률에 기반하며 참고용으로만 제공됩니다.
           </p>
         </div>
         <nav
-          className="flex flex-wrap justify-center gap-8 text-sm font-bold uppercase"
-          style={{ color: COLORS.onSurfaceVariant, letterSpacing: "0.18em" }}
+          className="flex flex-wrap justify-center gap-8 text-sm font-bold"
+          style={{ color: COLORS.onSurfaceVariant, letterSpacing: "0.1em" }}
         >
           <a href="#" className="transition-colors hover:opacity-80">
-            Terms of Service
+            이용 약관
           </a>
           <a href="#" className="transition-colors hover:opacity-80">
-            Privacy Policy
+            개인정보 처리방침
           </a>
           <a href="#" className="transition-colors hover:opacity-80">
-            Contact Support
+            고객 지원
           </a>
         </nav>
       </div>
