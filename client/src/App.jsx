@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
 import { COLORS } from "./constants/colors";
 import { STORAGE_KEYS } from "./constants/storageKeys";
@@ -9,15 +8,6 @@ import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
 import { UploadPage } from "./components/upload/UploadPage";
 import { ResultPage } from "./components/result/ResultPage";
-=======
-import React, { useState, useEffect } from "react";
-import { STORAGE_KEYS, COLORS, defaultResult, defaultFile } from "./constants";
-import { safeParse, createOptimizedPreview, formatFileSize, useExternalFonts } from "./utils";
-import Header from "./components/Header";
-import Footer from "./components/Footer";
-import UploadPage from "./pages/UploadPage";
-import ResultPage from "./pages/ResultPage";
->>>>>>> f5520349c4cdf2ec3046b16fb9e039c4e1e1ff44
 
 // 메인 App 컴포넌트
 export default function App() {
