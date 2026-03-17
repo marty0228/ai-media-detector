@@ -151,6 +151,8 @@ data/processed/
 data/splits/
 *.csv
 *.json
+!package.json       
+!package-lock.json 
 *.parquet
 *.h5
 *.pkl
