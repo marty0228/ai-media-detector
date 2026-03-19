@@ -1,10 +1,102 @@
 import React from "react";
+import { jsPDF } from "jspdf";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
 import { InfoCard } from "../common/InfoCard";
 import { AnimatedFactorCard } from "./AnimatedFactorCard";
 
 export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
+  const sanitizeFileName = (name) => {
+    return (name || "ai-detection-report")
+      .replace(/\.[^/.]+$/, "")
+      .replace(/[^a-zA-Z0-9가-힣-_ ]/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .slice(0, 60);
+  };
+
+  const toAscii = (value) => {
+    return String(value ?? "")
+      .replace(/[^\x20-\x7E]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
+
+  const handleSaveReport = () => {
+    const timestamp = new Date();
+    const fileBase = sanitizeFileName(fileInfo?.name);
+    const dateLabel = timestamp.toISOString().slice(0, 10);
+    const filename = `${fileBase || "ai-detection-report"}-${dateLabel}.pdf`;
+    const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+    const score = Number(result?.summary?.finalScore ?? 0);
+    const verdict = score >= 50 ? "Likely AI-generated" : "Likely Real photo";
+    const confidencePercent = Number(result?.summary?.confidence ?? 0) * 100;
+    const factors = Array.isArray(result?.factors) ? result.factors : [];
+
+    let y = 52;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text("AI Media Detection Report", 40, y);
+
+    y += 24;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Exported at: ${timestamp.toISOString()}`, 40, y);
+
+    y += 26;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("File Information", 40, y);
+
+    y += 18;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Name: ${toAscii(fileInfo?.name || "Unknown")}`, 40, y);
+    y += 16;
+    doc.text(`Type: ${toAscii(fileInfo?.type || "Unknown")}`, 40, y);
+    y += 16;
+    doc.text(`Size: ${toAscii(fileInfo?.size || "Unknown")}`, 40, y);
+
+    y += 26;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Summary", 40, y);
+
+    y += 18;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.text(`Final score: ${Number.isFinite(score) ? score.toFixed(2) : "0.00"}%`, 40, y);
+    y += 16;
+    doc.text(`Verdict: ${verdict}`, 40, y);
+    y += 16;
+    doc.text(
+      `Confidence: ${Number.isFinite(confidencePercent) ? confidencePercent.toFixed(2) : "0.00"}%`,
+      40,
+      y,
+    );
+
+    y += 26;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text("Factor Scores", 40, y);
+
+    y += 18;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    factors.forEach((factor, index) => {
+      const line = `${index + 1}. ${toAscii(factor?.title || `Factor ${index + 1}`)}: ${Number(factor?.score ?? 0)}%`;
+      if (y > 780) {
+        doc.addPage();
+        y = 52;
+      }
+      doc.text(line, 40, y);
+      y += 16;
+    });
+
+    doc.save(filename);
+  };
+
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
       <button
@@ -217,6 +309,20 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               >
                 결과 개요 보기
+              </button>
+              <button
+                className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border inline-flex items-center gap-2"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.16)",
+                  color: COLORS.onPrimary,
+                  borderColor: "rgba(255,255,255,0.25)",
+                  letterSpacing: "0.14em",
+                }}
+                type="button"
+                onClick={handleSaveReport}
+              >
+                <MaterialIcon className="text-base">download</MaterialIcon>
+                결과 저장하기
               </button>
               <button
                 className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border"
