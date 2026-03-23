@@ -16,20 +16,18 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
   };
 
   const handleSaveReport = async () => {
-    try {
-      await generateResultPdf({
-        result,
-        fileInfo,
-        previewUrl,
-        sanitizeFileName,
-      });
-    } catch (error) {
-      console.error("PDF 생성 실패:", error);
-      alert(
-        "PDF 생성 중 오류가 발생했습니다. public/fonts 폴더의 한글 폰트 파일을 확인해주세요.",
-      );
-    }
-  };
+  try {
+    await generateResultPdf({
+      result,
+      fileInfo,
+      previewUrl,
+      sanitizeFileName,
+    });
+  } catch (error) {
+    console.error("PDF 생성 실패:", error);
+    alert(`PDF 생성 실패: ${error?.message || error}`);
+  }
+};
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
