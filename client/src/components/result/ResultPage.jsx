@@ -66,7 +66,11 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
     y += 18;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
-    doc.text(`Final score: ${Number.isFinite(score) ? score.toFixed(2) : "0.00"}%`, 40, y);
+    doc.text(
+      `Final score: ${Number.isFinite(score) ? score.toFixed(2) : "0.00"}%`,
+      40,
+      y,
+    );
     y += 16;
     doc.text(`Verdict: ${verdict}`, 40, y);
     y += 16;
@@ -168,9 +172,19 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-[340px,1fr] gap-8">
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {result.factors.map((factor, index) => (
+              <AnimatedFactorCard
+                key={`${factor.title}-${index}`}
+                factor={factor}
+                index={index}
+              />
+            ))}
+          </div>
+
           <div
-            className="p-6 rounded-[1.5rem] border shadow-sm h-fit"
+            className="p-6 rounded-[1.5rem] border shadow-sm"
             style={{
               backgroundColor: COLORS.surfaceContainerLowest,
               borderColor: "rgba(193,199,203,0.1)",
@@ -217,7 +231,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 <img
                   src={previewUrl}
                   alt="Uploaded preview"
-                  className="w-full h-full object-cover"
+                  className="w-full max-h-[500px] object-contain"
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-8">
@@ -242,7 +256,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                     className="text-sm break-keep"
                     style={{ color: COLORS.onSurfaceVariant }}
                   >
-                    첫 페이지에서 이미지를 업로드해야 이곳에서 미리보기가 제공됩니다.
+                    첫 페이지에서 이미지를 업로드해야 이곳에서 미리보기가
+                    제공됩니다.
                   </p>
                 </div>
               )}
@@ -256,19 +271,12 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               />
               <div className="grid grid-cols-2 gap-4">
                 <InfoCard label="확장자" value={fileInfo.type || "Unknown"} />
-                <InfoCard label="파일 용량" value={fileInfo.size || "Unknown"} />
+                <InfoCard
+                  label="파일 용량"
+                  value={fileInfo.size || "Unknown"}
+                />
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {result.factors.map((factor, index) => (
-              <AnimatedFactorCard
-                key={`${factor.title}-${index}`}
-                factor={factor}
-                index={index}
-              />
-            ))}
           </div>
         </div>
       </section>
@@ -361,8 +369,12 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
             >
               {result.notes.sideTitle}
             </h4>
-            <p className="text-sm break-keep" style={{ color: COLORS.onSurfaceVariant }}>
-              향후 백엔드로부터 전달받는 시스템 메타데이터 및 연결 상태를 표기하는 공간입니다.
+            <p
+              className="text-sm break-keep"
+              style={{ color: COLORS.onSurfaceVariant }}
+            >
+              향후 백엔드로부터 전달받는 시스템 메타데이터 및 연결 상태를
+              표기하는 공간입니다.
             </p>
           </div>
           <div className="mt-8 flex flex-col gap-3">
