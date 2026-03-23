@@ -15,13 +15,6 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
       .slice(0, 60);
   };
 
-  const toAscii = (value) => {
-    return String(value ?? "")
-      .replace(/[^\x20-\x7E]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
   const handleSaveReport = async () => {
     try {
       await generateResultPdf({
@@ -29,11 +22,12 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
         fileInfo,
         previewUrl,
         sanitizeFileName,
-        toAscii,
       });
     } catch (error) {
       console.error("PDF 생성 실패:", error);
-      alert("PDF 생성 중 오류가 발생했습니다.");
+      alert(
+        "PDF 생성 중 오류가 발생했습니다. public/fonts 폴더의 한글 폰트 파일을 확인해주세요.",
+      );
     }
   };
 
