@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
 import { InfoCard } from "../common/InfoCard";
@@ -6,6 +6,8 @@ import { AnimatedFactorCard } from "./AnimatedFactorCard";
 import { generateResultPdf } from "../../utils/generateResultPdf";
 
 export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
+  const reportRef = useRef(null);
+
   const sanitizeFileName = (name) => {
     return (name || "ai-detection-report")
       .replace(/\.[^/.]+$/, "")
@@ -15,30 +17,25 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
       .slice(0, 60);
   };
 
-  const toAscii = (value) => {
-    return String(value ?? "")
-      .replace(/[^\x20-\x7E]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  };
-
   const handleSaveReport = async () => {
     try {
       await generateResultPdf({
-        result,
         fileInfo,
-        previewUrl,
         sanitizeFileName,
-        toAscii,
+        reportElement: reportRef.current,
       });
     } catch (error) {
       console.error("PDF 생성 실패:", error);
-      alert("PDF 생성 중 오류가 발생했습니다.");
+      alert(`PDF 생성 중 오류가 발생했습니다: ${error.message}`);
     }
   };
 
   return (
-    <main className="max-w-7xl mx-auto px-6 py-12">
+    <main
+      ref={reportRef}
+      data-report-export="true"
+      className="max-w-7xl mx-auto px-6 py-12"
+    >
       <button
         type="button"
         onClick={onBack}
