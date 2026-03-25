@@ -1,6 +1,7 @@
 import React from "react";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
+import Logo from "../../assets/logoColored.svg";
 
 export function Header() {
   return (
@@ -11,12 +12,14 @@ export function Header() {
         backdropFilter: "blur(12px)",
       }}
     >
-      <div className="flex items-center gap-3">
-        <MaterialIcon className="text-[24px]" style={{ color: COLORS.primary }}>
-          security
-        </MaterialIcon>
+      <div className="flex items-center gap-0.5">
+        <img
+          src={Logo}
+          alt="AI 판독기 로고"
+          className="w-8 h-8 block shrink-0"
+        />
         <span
-          className="font-extrabold text-xl tracking-tight"
+          className="font-extrabold text-xl tracking-tight leading-none"
           style={{ color: COLORS.primary, fontFamily: "Manrope, sans-serif" }}
         >
           AI 판독기
