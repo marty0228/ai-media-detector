@@ -1,7 +1,4 @@
-import { jsPDF } from "jspdf";
-<<<<<<< HEAD
-import { toCanvas } from "html-to-image";
-=======
+﻿import { jsPDF } from "jspdf";
 
 const FONT_FAMILY = "NanumGothic";
 const REGULAR_FONT_FILE = "NanumGothic.ttf";
@@ -50,13 +47,13 @@ const fetchFontAsBase64 = async (url) => {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`폰트 요청 실패 (${response.status}): ${url}`);
+    throw new Error(`?고듃 ?붿껌 ?ㅽ뙣 (${response.status}): ${url}`);
   }
 
   const blob = await response.blob();
 
   if (!blob || blob.size === 0) {
-    throw new Error(`폰트 파일이 비어 있음: ${url}`);
+    throw new Error(`?고듃 ?뚯씪??鍮꾩뼱 ?덉쓬: ${url}`);
   }
 
   return blobToBase64(blob);
@@ -73,7 +70,7 @@ const registerKoreanFonts = async (doc) => {
         `/fonts/${BOLD_FONT_FILE}`,
       );
     } catch (error) {
-      console.warn("Bold 폰트가 없어 Regular 폰트로 대체합니다.", error);
+      console.warn("Bold ?고듃媛 ?놁뼱 Regular ?고듃濡??泥댄빀?덈떎.", error);
       fontCache.boldBase64 = fontCache.regularBase64;
     }
 
@@ -183,10 +180,10 @@ const drawLabelValue = (
 
 const drawFactorCard = (doc, factor, x, y, w, h) => {
   const score = Number(factor?.score ?? 0);
-  const title = toText(factor?.title, "평가 항목");
+  const title = toText(factor?.title, "?됯? ??ぉ");
   const detail = toText(
     factor?.detail || factor?.description || factor?.reason || factor?.summary,
-    "세부 설명이 없습니다.",
+    "?몃? ?ㅻ챸???놁뒿?덈떎.",
   );
 
   const accent = getScoreAccent(score);
@@ -219,93 +216,16 @@ const drawFactorCard = (doc, factor, x, y, w, h) => {
   const detailLines = doc.splitTextToSize(detail, w - 28);
   doc.text(detailLines.slice(0, 3), x + 14, y + 62);
 };
->>>>>>> 84f647a5d0ba120aa202c77830fec1b78c868023
 
 export async function generateResultPdf({
   fileInfo,
   sanitizeFileName,
-<<<<<<< HEAD
-  reportElement,
-=======
->>>>>>> 84f647a5d0ba120aa202c77830fec1b78c868023
 }) {
   const timestamp = new Date();
   const fileBase = sanitizeFileName(fileInfo?.name);
   const dateLabel = timestamp.toISOString().slice(0, 10);
   const filename = `${fileBase || "ai-detection-report"}-${dateLabel}.pdf`;
 
-<<<<<<< HEAD
-  const pageRoot = document.documentElement;
-  const body = document.body;
-
-  const fullWidth = Math.max(
-    pageRoot.scrollWidth,
-    pageRoot.clientWidth,
-    pageRoot.offsetWidth,
-    body?.scrollWidth || 0,
-    body?.clientWidth || 0,
-    body?.offsetWidth || 0,
-  );
-  const fullHeight = Math.max(
-    pageRoot.scrollHeight,
-    pageRoot.clientHeight,
-    pageRoot.offsetHeight,
-    body?.scrollHeight || 0,
-    body?.clientHeight || 0,
-    body?.offsetHeight || 0,
-  );
-
-  const targetNode = reportElement || pageRoot;
-
-  if (document.fonts?.ready) {
-    await document.fonts.ready;
-  }
-
-  await new Promise((resolve) =>
-    requestAnimationFrame(() => requestAnimationFrame(resolve)),
-  );
-
-  // Google Fonts stylesheet의 cssRules 접근(CORS) 오류를 피하기 위해
-  // 폰트 임베딩을 비활성화하고 DOM 캡처만 수행합니다.
-  const canvas = await toCanvas(targetNode, {
-    cacheBust: true,
-    pixelRatio: 1,
-    backgroundColor: "#f3faff",
-    fontEmbedCSS: "",
-    width: fullWidth,
-    height: fullHeight,
-    canvasWidth: fullWidth,
-    canvasHeight: fullHeight,
-    style: {
-      transform: "none",
-      transformOrigin: "top left",
-    },
-  });
-
-  const imageData = canvas.toDataURL("image/jpeg", 0.96);
-  const imageWidth = canvas.width;
-  const imageHeight = canvas.height;
-
-  if (!imageWidth || !imageHeight) {
-    throw new Error("PDF 생성용 캡처 이미지가 비어 있습니다.");
-  }
-
-  const portrait = { width: 595.28, height: 841.89 };
-  const landscape = { width: 841.89, height: 595.28 };
-  const margin = 16;
-
-  const portraitScale = Math.min(
-    (portrait.width - margin * 2) / imageWidth,
-    (portrait.height - margin * 2) / imageHeight,
-  );
-  const landscapeScale = Math.min(
-    (landscape.width - margin * 2) / imageWidth,
-    (landscape.height - margin * 2) / imageHeight,
-  );
-
-  const orientation = landscapeScale > portraitScale ? "landscape" : "portrait";
-  const doc = new jsPDF({ unit: "pt", format: "a4", orientation });
-=======
   const doc = new jsPDF({
     unit: "pt",
     format: "a4",
@@ -313,7 +233,6 @@ export async function generateResultPdf({
   });
 
   await registerKoreanFonts(doc);
->>>>>>> 84f647a5d0ba120aa202c77830fec1b78c868023
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -321,22 +240,6 @@ export async function generateResultPdf({
   const availableHeight = pageHeight - margin * 2;
   const fitRatio = Math.min(availableWidth / imageWidth, availableHeight / imageHeight);
 
-<<<<<<< HEAD
-  const renderWidth = imageWidth * fitRatio;
-  const renderHeight = imageHeight * fitRatio;
-  const offsetX = (pageWidth - renderWidth) / 2;
-  const offsetY = (pageHeight - renderHeight) / 2;
-
-  doc.addImage(
-    imageData,
-    "JPEG",
-    offsetX,
-    offsetY,
-    renderWidth,
-    renderHeight,
-    undefined,
-    "FAST",
-=======
   const margin = 28;
   const contentWidth = pageWidth - margin * 2;
   const gap = 14;
@@ -344,12 +247,12 @@ export async function generateResultPdf({
   const score = Number(result?.summary?.finalScore ?? 0);
   const verdict = toText(
     result?.summary?.verdict,
-    score >= 50 ? "AI 생성 가능성이 높음" : "실제 사진일 가능성이 높음",
+    score >= 50 ? "AI ?앹꽦 媛?μ꽦???믪쓬" : "?ㅼ젣 ?ъ쭊??媛?μ꽦???믪쓬",
   );
   const confidencePercent = Number(result?.summary?.confidence ?? 0) * 100;
   const summaryDescription = toText(
     result?.summary?.description,
-    "AI 생성 콘텐츠 분석 결과 리포트입니다.",
+    "AI ?앹꽦 肄섑뀗痢?遺꾩꽍 寃곌낵 由ы룷?몄엯?덈떎.",
   );
   const factors = Array.isArray(result?.factors)
     ? result.factors.slice(0, 5)
@@ -385,12 +288,12 @@ export async function generateResultPdf({
 
   // ===== Hero Section =====
   const heroY = headerY + headerH + 45;
-  const heroH = 226; // 190 -> 226로 증가
+  const heroH = 226; // 190 -> 226濡?利앷?
 
   const mediaW = 180;
   const summaryW = contentWidth - mediaW - gap;
 
-  // 왼쪽 업로드 이미지 카드
+  // ?쇱そ ?낅줈???대?吏 移대뱶
   doc.setFillColor(...COLORS.white);
   doc.setDrawColor(...COLORS.border);
   doc.roundedRect(margin, heroY, mediaW, heroH, 18, 18, "FD");
@@ -398,12 +301,12 @@ export async function generateResultPdf({
   setPdfFont(doc, "bold");
   doc.setFontSize(12);
   doc.setTextColor(...COLORS.text);
-  doc.text("업로드 이미지", margin + 16, heroY + 22);
+  doc.text("?낅줈???대?吏", margin + 16, heroY + 22);
 
   const imageBoxX = margin + 16;
   const imageBoxY = heroY + 34;
   const imageBoxW = mediaW - 32;
-  const imageBoxH = 122; // 104 -> 122로 증가
+  const imageBoxH = 122; // 104 -> 122濡?利앷?
 
   doc.setFillColor(...COLORS.mutedBg);
   doc.setDrawColor(223, 228, 234);
@@ -424,7 +327,7 @@ export async function generateResultPdf({
     doc.setFontSize(9);
     doc.setTextColor(...COLORS.subText);
     doc.text(
-      "미리보기 없음",
+      "誘몃━蹂닿린 ?놁쓬",
       imageBoxX + imageBoxW / 2,
       imageBoxY + imageBoxH / 2,
       {
@@ -433,14 +336,14 @@ export async function generateResultPdf({
     );
   }
 
-  // 텍스트 위치를 고정값 대신 이미지 박스 기준으로 계산
+  // ?띿뒪???꾩튂瑜?怨좎젙媛?????대?吏 諛뺤뒪 湲곗??쇰줈 怨꾩궛
   const fileNameY = imageBoxY + imageBoxH + 18;
   const fileMetaY = fileNameY + 34;
 
   drawLabelValue(doc, {
     x: imageBoxX,
     y: fileNameY,
-    label: "파일 이름",
+    label: "?뚯씪 ?대쫫",
     value: fileInfo?.name || "Unknown",
     valueWidth: imageBoxW,
     valueSize: 8.2,
@@ -449,13 +352,13 @@ export async function generateResultPdf({
   drawLabelValue(doc, {
     x: imageBoxX,
     y: fileMetaY,
-    label: "형식 / 용량",
+    label: "?뺤떇 / ?⑸웾",
     value: `${toText(fileInfo?.type, "Unknown")} / ${toText(fileInfo?.size, "Unknown")}`,
     valueWidth: imageBoxW,
     valueSize: 8.2,
   });
 
-  // 오른쪽 종합 분석 결과 카드
+  // ?ㅻⅨ履?醫낇빀 遺꾩꽍 寃곌낵 移대뱶
   const summaryX = margin + mediaW + gap;
   doc.setFillColor(...COLORS.white);
   doc.setDrawColor(...COLORS.border);
@@ -464,12 +367,11 @@ export async function generateResultPdf({
   setPdfFont(doc, "bold");
   doc.setFontSize(14);
   doc.setTextColor(...COLORS.title);
-  doc.text("종합 분석 결과", summaryX + 18, heroY + 24);
+  doc.text("醫낇빀 遺꾩꽍 寃곌낵", summaryX + 18, heroY + 24);
 
-  // 오른쪽 점수 원이 차지하는 공간을 확실히 비워 둠
-  const circleRadius = 34;
+  // ?ㅻⅨ履??먯닔 ?먯씠 李⑥??섎뒗 怨듦컙???뺤떎??鍮꾩썙 ??  const circleRadius = 34;
   const circleX = summaryX + summaryW - 76;
-  const circleY = heroY + 68; // 62 -> 68로 약간 아래
+  const circleY = heroY + 68; // 62 -> 68濡??쎄컙 ?꾨옒
   const circleReserveW = 120;
 
   const summaryTextX = summaryX + 18;
@@ -496,23 +398,23 @@ export async function generateResultPdf({
   doc.setTextColor(...COLORS.subText);
   doc.text("TOTAL SCORE", circleX, circleY - 42, { align: "center" });
 
-  // 하단 미니 카드
-  const miniY = heroY + 130; // 112 -> 130으로 아래
+  // Bottom mini cards
+  const miniY = heroY + 130;
   const miniGap = 10;
   const miniW = (summaryW - 36 - miniGap * 2) / 3;
   const miniH = 50;
 
   const miniCards = [
     {
-      label: "판정",
+      label: "Verdict",
       value: verdict,
     },
     {
-      label: "신뢰도",
+      label: "Confidence",
       value: `${confidencePercent.toFixed(2)}%`,
     },
     {
-      label: "생성 시각",
+      label: "Generated At",
       value: timestamp.toISOString().slice(0, 16).replace("T", " "),
     },
   ];
@@ -535,13 +437,13 @@ export async function generateResultPdf({
     doc.text(lines.slice(0, 2), x + 10, miniY + 30);
   });
 
-  // ===== 세부 평가 항목 섹션: 전체를 조금 더 아래로 =====
-  const factorsTitleY = heroY + heroH + 46; // 기존 34 -> 46
+  // ===== ?몃? ?됯? ??ぉ ?뱀뀡: ?꾩껜瑜?議곌툑 ???꾨옒濡?=====
+  const factorsTitleY = heroY + heroH + 46; // 湲곗〈 34 -> 46
 
   setPdfFont(doc, "bold");
   doc.setFontSize(13);
   doc.setTextColor(...COLORS.title);
-  doc.text("세부 평가 항목", margin + 2, factorsTitleY);
+  doc.text("?몃? ?됯? ??ぉ", margin + 2, factorsTitleY);
 
   const factorsY = factorsTitleY + 14;
   const cardGap = 14;
@@ -594,7 +496,6 @@ export async function generateResultPdf({
     `Generated for ${toText(fileInfo?.name, "Unknown")}  |  ${timestamp.toISOString()}`,
     margin,
     footerY,
->>>>>>> 84f647a5d0ba120aa202c77830fec1b78c868023
   );
 
   doc.save(filename);
