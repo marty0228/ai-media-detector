@@ -26,8 +26,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
       sanitizeFileName,
     });
   } catch (error) {
-    console.error("PDF ?앹꽦 ?ㅽ뙣:", error);
-    alert(`PDF ?앹꽦 ?ㅽ뙣: ${error?.message || error}`);
+    console.error("PDF 생성 실패:", error);
+    alert(`PDF 생성 실패: ${error?.message || error}`);
   }
 };
 
@@ -44,7 +44,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
         style={{ color: COLORS.primary }}
       >
         <MaterialIcon className="text-base">arrow_back</MaterialIcon>
-        ?낅줈???섏씠吏濡??뚯븘媛湲?      </button>
+        업로드 페이지로 돌아가기
+      </button>
 
       <section className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
@@ -58,7 +59,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               }}
             >
               <MaterialIcon className="text-sm">science</MaterialIcon>
-              AI 寃利?由ы룷??            </div>
+              AI 검증 리포트
+            </div>
             <h2
               className="text-4xl font-extrabold mb-2"
               style={{
@@ -66,7 +68,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 fontFamily: "Manrope, sans-serif",
               }}
             >
-              醫낇빀 遺꾩꽍 寃곌낵
+              종합 분석 결과
             </h2>
             <p style={{ color: COLORS.onSurfaceVariant }}>
               {result.summary.description}
@@ -82,7 +84,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 className="text-xs font-bold uppercase opacity-70"
                 style={{ letterSpacing: "0.15em" }}
               >
-                ?덉륫 ?좊ː??              </span>
+                예측 신뢰도
+              </span>
               <div
                 className="text-5xl font-black mt-1"
                 style={{ fontFamily: "Manrope, sans-serif" }}
@@ -98,7 +101,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               >
                 {result.summary.verdict}
               </span>
-              <span>{`?좊ː???몃??섏튂: ${result.summary.confidence}`}</span>
+              <span>{`신뢰도 세부수치: ${result.summary.confidence}`}</span>
             </div>
           </div>
         </div>
@@ -130,12 +133,13 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                     fontFamily: "Manrope, sans-serif",
                   }}
                 >
-                  ?낅줈?쒕맂 ?⑹쓽?좎긽 誘몃뵒??                </h3>
+                  업로드된 용의선상 미디어
+                </h3>
                 <p
                   className="text-sm break-keep"
                   style={{ color: COLORS.onSurfaceVariant }}
                 >
-                  ?꾩옱 諛깆뿏???쒕쾭濡??꾩넚?섏뼱 遺꾩꽍???먮낯 ?대?吏?낅땲??
+                  현재 백엔드 서버로 전송되어 분석된 원본 이미지입니다.
                 </p>
               </div>
               <span
@@ -146,7 +150,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                   letterSpacing: "0.15em",
                 }}
               >
-                怨좉컼 ?낅젰
+                고객 입력
               </span>
             </div>
 
@@ -180,7 +184,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                       fontFamily: "Manrope, sans-serif",
                     }}
                   >
-                    誘몃━蹂닿린 ?놁쓬
+                    미리보기 없음
                   </h4>
                   <p
                     className="text-sm break-keep"
@@ -246,7 +250,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 type="button"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               >
-                寃곌낵 媛쒖슂 蹂닿린
+                결과 개요 보기
               </button>
               <button
                 className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border inline-flex items-center gap-2"
@@ -260,7 +264,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 onClick={handleSaveReport}
               >
                 <MaterialIcon className="text-base">download</MaterialIcon>
-                寃곌낵 ??ν븯湲?              </button>
+                결과 저장하기
+              </button>
               <button
                 className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border"
                 style={{
@@ -272,7 +277,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
                 type="button"
                 onClick={onBack}
               >
-                ?ㅻⅨ ?대?吏 寃?ы븯湲?              </button>
+                다른 이미지 검사하기
+              </button>
             </div>
           </div>
         </div>
@@ -301,7 +307,8 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               className="text-sm break-keep"
               style={{ color: COLORS.onSurfaceVariant }}
             >
-              ?ν썑 諛깆뿏?쒕줈遺???꾨떖諛쏅뒗 ?쒖뒪??硫뷀??곗씠??諛??곌껐 ?곹깭瑜?              ?쒓린?섎뒗 怨듦컙?낅땲??
+              추후 백엔드로부터 전달받는 시스템 메타데이터 및 연결 상태를
+              표기하는 공간입니다.
             </p>
           </div>
           <div className="mt-8 flex flex-col gap-3">
