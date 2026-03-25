@@ -18,6 +18,7 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
   };
 
   const handleSaveReport = async () => {
+<<<<<<< HEAD
     try {
       await generateResultPdf({
         fileInfo,
@@ -29,6 +30,20 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
       alert(`PDF 생성 중 오류가 발생했습니다: ${error.message}`);
     }
   };
+=======
+  try {
+    await generateResultPdf({
+      result,
+      fileInfo,
+      previewUrl,
+      sanitizeFileName,
+    });
+  } catch (error) {
+    console.error("PDF 생성 실패:", error);
+    alert(`PDF 생성 실패: ${error?.message || error}`);
+  }
+};
+>>>>>>> 84f647a5d0ba120aa202c77830fec1b78c868023
 
   return (
     <main
