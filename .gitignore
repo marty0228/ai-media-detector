@@ -1,9 +1,97 @@
-# Logs
-logs
+# =========================================================
+# 1) 지금 프로젝트에서 중요한 것
+# =========================================================
+
+# -------------------------
+# Python / FastAPI
+# -------------------------
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Environment
+.env
+.venv/
+venv/
+
+# -------------------------
+# Environment variables
+# -------------------------
+.env
+.env.*
+!.env.example
+
+# -------------------------
+# Node / React / Vite
+# -------------------------
+node_modules/
+dist
+coverage
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# -------------------------
+# Project-specific generated files
+# -------------------------
+/uploads/
+
+# -------------------------
+# AI / Data artifacts
+# -------------------------
+data/raw/
+data/processed/
+data/splits/
+*.csv
+*.json
+!package.json
+!package-lock.json
+*.parquet
+*.h5
+*.pkl
+
+models/*.pth
+models/*.h5
+models/*.ckpt
+models/*.safetensors
+
+# 단, 샘플 데이터는 포함
+!data_samples/
+
+# -------------------------
+# IDE / OS
+# -------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+
+# =========================================================
+# 2) 덜 중요하지만 남겨둘 만한 것
+#    - 테스트/캐시/로그/실행 중 생성 파일
+# =========================================================
+
+# Logs
+logs
 lerna-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
@@ -19,30 +107,10 @@ pids
 lib-cov
 
 # Coverage directory used by tools like istanbul
-coverage
 *.lcov
 
 # nyc test coverage
 .nyc_output
-
-# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
-.grunt
-
-# Bower dependency directory (https://bower.io/)
-bower_components
-
-# node-waf configuration
-.lock-wscript
-
-# Compiled binary addons (https://nodejs.org/api/addons.html)
-build/Release
-
-# Dependency directories
-node_modules/
-jspm_packages/
-
-# Snowpack dependency directory (https://snowpack.dev/)
-web_modules/
 
 # TypeScript cache
 *.tsbuildinfo
@@ -62,17 +130,43 @@ web_modules/
 # Output of 'npm pack'
 *.tgz
 
-# Yarn Integrity file
-.yarn-integrity
-
-# dotenv environment variable files
-.env
-.env.*
-!.env.example
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
+
+# Gatsby files
+.cache/
+
+# vuepress v2.x temp and cache directory
+.temp
+.cache
+
+
+# =========================================================
+# 3) 현재 기준으로는 거의 안 쓰는 것
+#    - 다른 도구 / 다른 프레임워크 / 구형 템플릿용
+# =========================================================
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# Snowpack dependency directory (https://snowpack.dev/)
+web_modules/
+
+# Yarn Integrity file
+.yarn-integrity
 
 # Next.js build output
 .next
@@ -80,20 +174,13 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
-
-# Gatsby files
-.cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
-# public
 
 # vuepress build output
 .vuepress/dist
 
-# vuepress v2.x temp and cache directory
-.temp
-.cache
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# https://nextjs.org/blog/next-9-1#public-directory-support
+# public
 
 # Sveltekit cache directory
 .svelte-kit/
@@ -133,54 +220,3 @@ dist
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-
-# Vite logs files
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-
-# Project specific
-/uploads/
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-
-# Data directories (절대 커밋하지 않음)
-data/raw/
-data/processed/
-data/splits/
-*.csv
-*.json
-!package.json       
-!package-lock.json 
-*.parquet
-*.h5
-*.pkl
-
-# Large model files
-models/*.pth
-models/*.h5
-models/*.ckpt
-models/*.safetensors
-
-# Cache
-__pycache__/
-*.pyc
-.pytest_cache/
-.ipynb_checkpoints/
-
-# Environment
-.env
-.venv/
-venv/
-
-# IDE
-.vscode/
-.idea/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# 단, 샘플 데이터는 포함
-!data_samples/
