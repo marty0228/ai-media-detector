@@ -46,6 +46,15 @@ vite.config.ts.timestamp-*
 data/raw/
 data/processed/
 data/splits/
+
+# Images
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.bmp
+
 *.csv
 *.json
 !package.json
