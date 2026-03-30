@@ -47,6 +47,15 @@ data/raw/
 data/processed/
 data/splits/
 
+# datasets 폴더 내의 파일들(이미지, txt)만 무시하고 폴더 구조는 유지
+datasets/**/*.jpg
+datasets/**/*.jpeg
+datasets/**/*.png
+datasets/**/*.gif
+datasets/**/*.webp
+datasets/**/*.bmp
+datasets/**/*.txt
+
 # Images
 *.jpg
 *.jpeg

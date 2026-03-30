@@ -14,8 +14,8 @@ def load_model():
 
     print("Loading Meta Data AI model...")
     base_path = os.path.dirname(os.path.abspath(__file__))
-    model_path = os.path.join(base_path, 'rf_metadata_model.pkl')
-    columns_path = os.path.join(base_path, 'model_columns.pkl')
+    model_path = os.path.join(base_path, 'model', 'rf_metadata_model.pkl')
+    columns_path = os.path.join(base_path, 'model', 'model_columns.pkl')
     
     if os.path.exists(model_path) and os.path.exists(columns_path):
         model = joblib.load(model_path)
@@ -44,8 +44,13 @@ def predict(image_bytes: bytes) -> dict:
     df_test = pd.DataFrame([metadata])
     
     # 전처리
-    X_test = df_test.drop(columns=['label', 'filename'], errors='ignore')
-    X_test = pd.get_dummies(X_test, columns=['software'])
+    drop_columns = ['label', 'filename', 'make_raw', 'model_raw', 'software_raw']
+    existing_drop_columns = [col for col in drop_columns if col in df_test.columns]
+    X_test = df_test.drop(columns=existing_drop_columns)
+    
+    categorical_cols = [col for col in ['camera_brand', 'software_type'] if col in X_test.columns]
+    if categorical_cols:
+        X_test = pd.get_dummies(X_test, columns=categorical_cols)
     
     # 학습 시 저장해둔 컬럼(trained_columns)과 맞추기
     X_test = X_test.reindex(columns=trained_columns, fill_value=0)

@@ -10,7 +10,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 print("모델 학습을 시작합니다...")
 
 # 확장된 feature CSV 경로
-csv_path = os.path.join(base_dir, 'metadata_dataset_expanded.csv')
+csv_path = os.path.join(base_dir, 'model', 'metadata_dataset_expanded.csv')
 df = pd.read_csv(csv_path)
 
 # -----------------------------
@@ -106,7 +106,7 @@ feature_importance_df = pd.DataFrame({
     'importance': model.feature_importances_
 }).sort_values(by='importance', ascending=False)
 
-importance_csv_path = os.path.join(base_dir, 'feature_importance.csv')
+importance_csv_path = os.path.join(base_dir, 'model', 'feature_importance.csv')
 feature_importance_df.to_csv(importance_csv_path, index=False, encoding='utf-8-sig')
 
 print("\n상위 20개 중요 feature:")
@@ -115,8 +115,8 @@ print(feature_importance_df.head(20))
 # -----------------------------
 # 7. 모델 및 컬럼 정보 저장
 # -----------------------------
-model_path = os.path.join(base_dir, 'rf_metadata_model.pkl')
-columns_path = os.path.join(base_dir, 'model_columns.pkl')
+model_path = os.path.join(base_dir, 'model', 'rf_metadata_model.pkl')
+columns_path = os.path.join(base_dir, 'model', 'model_columns.pkl')
 
 joblib.dump(model, model_path)
 joblib.dump(X_train.columns.tolist(), columns_path)

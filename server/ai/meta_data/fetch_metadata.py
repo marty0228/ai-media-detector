@@ -457,5 +457,5 @@ if __name__ == "__main__":
     all_data.extend(collect_images_from_folder(REAL_FOLDER, label=0))
     all_data.extend(collect_images_from_folder(AI_FOLDER, label=1))
 
-    output_csv = os.path.join(base_dir, 'metadata_dataset_expanded.csv')
+    output_csv = os.path.join(base_dir, 'model', 'metadata_dataset_expanded.csv')
     save_to_csv(all_data, output_csv)

@@ -105,6 +105,7 @@ export default function App() {
       // API 응답을 defaultResult 형태에 맞게 가공합니다.
       const apiData = await response.json();
       const predictionObj = apiData.prediction;
+      const finalPred = predictionObj.final_prediction || predictionObj;
       
       const fileSize = formatFileSize(selectedFile.size);
       const nextFileInfo = {
@@ -114,15 +115,28 @@ export default function App() {
       };
 
       // 퍼센트 문자열(예: "95.00%")에서 숫자만 추출
-      const parsedConfidence = parseFloat(predictionObj.confidence);
+      const parsedConfidence = parseFloat(finalPred.confidence);
       
+      // 개별 모델 결과를 factors에 반영
+      const updatedFactors = defaultResult.factors.map((factor, idx) => {
+        const indPred = predictionObj.individual_predictions?.[idx];
+        if (!indPred) return factor;
+        const score = Math.round(parseFloat(indPred.confidence) * 100);
+        return {
+          ...factor,
+          score: Math.min(Math.max(score, 0), 100), // 0 ~ 100
+          progressValue: indPred.predicted_idx === 1 ? "AI 의심 (높음)" : "정상 (낮음)",
+        };
+      });
+
       const nextResult = {
         ...defaultResult, // 기존 구조(factors 등)를 유지
+        factors: updatedFactors,
         summary: {
           ...defaultResult.summary,
           finalScore: parsedConfidence, 
           // 0 이면 진짜, 1 이면 가짜
-          verdict: predictionObj.predicted_idx === 1 ? "AI 생성 의심" : "실제 사진",
+          verdict: finalPred.predicted_idx === 1 ? "AI 생성 의심" : "실제 사진",
           confidence: parsedConfidence / 100, // 0.95 형태 
           description: "본 분석 결과는 AI 예측 모델 백엔드로부터 응답받은 실제 추론 데이터입니다.",
         },
