@@ -81,7 +81,10 @@ datasets/**/*.txt
 *.onnx
 *.safetensors
 server/ai/models/*/weights/
-server/ai/water_mark/datasets/**/*
+server/ai/water_mark/datasets/**/*.jpg
+server/ai/water_mark/datasets/**/*.jpeg
+server/ai/water_mark/datasets/**/*.png
+server/ai/water_mark/datasets/**/*.txt
 server/ai/water_mark/runs/**/*
 
 
