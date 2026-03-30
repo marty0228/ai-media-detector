@@ -117,9 +117,20 @@ export default function App() {
       // 퍼센트 문자열(예: "95.00%")에서 숫자만 추출
       const parsedConfidence = parseFloat(finalPred.confidence);
       
+      const modelMapping = {
+        "출처 검증": "Model 2",
+        "메타데이터 분석": "Meta Data",
+        "외부 검색 검증": "Model 4",
+        "시각적 이상 분석": "Model 3",
+        "포렌식 패턴 분석": "Model 5",
+      };
+
       // 개별 모델 결과를 factors에 반영
-      const updatedFactors = defaultResult.factors.map((factor, idx) => {
-        const indPred = predictionObj.individual_predictions?.[idx];
+      const updatedFactors = defaultResult.factors.map((factor) => {
+        const targetModelName = modelMapping[factor.title];
+        const indPred = predictionObj.individual_predictions?.find(
+          (p) => p.model_name === targetModelName
+        );
         if (!indPred) return factor;
         const score = Math.round(parseFloat(indPred.confidence) * 100);
         return {
