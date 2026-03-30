@@ -118,7 +118,7 @@ export default function App() {
       const parsedConfidence = parseFloat(finalPred.confidence);
       
       const modelMapping = {
-        "출처 검증": "Model 2",
+        "출처 검증": "Water Mark",
         "메타데이터 분석": "Meta Data",
         "외부 검색 검증": "Model 4",
         "시각적 이상 분석": "Model 3",
