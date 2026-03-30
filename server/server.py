@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from ai.ai import load_ai_model, predict_image
+from ai.manager import load_ai_model, predict_all
 
 app = FastAPI()
 
@@ -39,8 +39,8 @@ async def detect_ai_media(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading file: {str(e)}")
     
-    # 3. 모델을 이용한 추론
-    result = predict_image(contents)
+    # 3. 모델을 이용한 추론 (5개 모델 + 메타 모델 앙상블)
+    result = predict_all(contents)
     
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])

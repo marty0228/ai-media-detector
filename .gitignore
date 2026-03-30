@@ -54,10 +54,15 @@ data/splits/
 *.h5
 *.pkl
 
-models/*.pth
-models/*.h5
-models/*.ckpt
-models/*.safetensors
+# AI Models
+*.pth
+*.pt
+*.h5
+*.keras
+*.bin
+*.onnx
+*.safetensors
+server/ai/models/*/weights/
 
 # 단, 샘플 데이터는 포함
 !data_samples/
