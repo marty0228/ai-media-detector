@@ -1,194 +1,29 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { COLORS } from "./constants/colors";
 import { STORAGE_KEYS } from "./constants/storageKeys";
-import { defaultResult, defaultFile } from "./constants/defaultData";
-import { safeParse, formatFileSize, createOptimizedPreview } from "./utils/utils";
 import { useExternalFonts } from "./hooks/useExternalFonts";
+import { useAnalysisState } from "./hooks/useAnalysisState";
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
 import { UploadPage } from "./components/upload/UploadPage";
 import { ResultPage } from "./components/result/ResultPage";
 
-// 메인 App 컴포넌트
 export default function App() {
-  // 전역 뷰용 폰트 동적 로드 (Material Icons 등)
   useExternalFonts();
 
-  // 앱 내 상태 관리
-  const [page, setPage] = useState("upload");
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewDataUrl, setPreviewDataUrl] = useState("");
-  const [result, setResult] = useState(
-    () => safeParse(localStorage.getItem(STORAGE_KEYS.result)) || defaultResult,
-  );
-  const [savedFileInfo, setSavedFileInfo] = useState(
-    () => safeParse(localStorage.getItem(STORAGE_KEYS.file)) || defaultFile,
-  );
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isDragActive, setDragActive] = useState(false);
-
-  // 로컬 데이터(이전 분석 내역) 복원 효과
-  useEffect(() => {
-    const storedPreview = localStorage.getItem(STORAGE_KEYS.preview);
-    if (storedPreview) {
-      setPreviewDataUrl(storedPreview);
-    }
-    if (safeParse(localStorage.getItem(STORAGE_KEYS.result))) {
-      setPage("result");
-    }
-  }, []);
-
-  // 파일 선택 핸들러
-  const handleSelectedFile = async (file) => {
-    if (!file.type.startsWith("image/")) {
-      alert("이미지 파일을 업로드해주세요.");
-      return;
-    }
-
-    if (file.size > 25 * 1024 * 1024) {
-      alert("최대 25MB 이하의 이미지를 선택해주세요.");
-      return;
-    }
-
-    // 선택된 이미지의 최적화된 프리뷰 생성 및 로컬 상태에 저장
-    const optimizedPreview = await createOptimizedPreview(file);
-    setSelectedFile(file);
-    setPreviewDataUrl(optimizedPreview);
-  };
-
-  // 분석 시작 핸들러 (실제 API 호출)
-  const handleAnalyze = async () => {
-    if (!selectedFile) return;
-
-    try {
-      setIsAnalyzing(true);
-
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-
-      // 실제 API 엔드포인트 호출 (/analyze)
-      const response = await fetch("http://localhost:8000/api/detect", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let errorMessage = "분석 요청에 실패했습니다.";
-        try {
-          const errorData = await response.json();
-          if (errorData.detail) {
-            errorMessage = errorData.detail;
-          }
-        } catch {
-          // json 변환 불가 시 무시
-        }
-        throw new Error(errorMessage);
-      }
-
-      // API 통신 성공 시 받은 데이터 처리 (기존 코드 주석 처리)
-      // const nextResult = await response.json();
-      // const nextFileInfo = {
-      //   name: selectedFile.name,
-      //   type: selectedFile.type || "Unknown",
-      //   size: formatFileSize(selectedFile.size),
-      // };
-
-      // // 분석 결과, 파일 정보 등을 로컬 스토리지에 캐싱
-      // localStorage.setItem(STORAGE_KEYS.result, JSON.stringify(nextResult));
-      // localStorage.setItem(STORAGE_KEYS.file, JSON.stringify(nextFileInfo));
-      // if (previewDataUrl) {
-      //   localStorage.setItem(STORAGE_KEYS.preview, previewDataUrl);
-      // } else {
-      //   localStorage.removeItem(STORAGE_KEYS.preview);
-      // }
-
-      // API 응답을 defaultResult 형태에 맞게 가공합니다.
-      const apiData = await response.json();
-      const predictionObj = apiData.prediction;
-      const finalPred = predictionObj.final_prediction || predictionObj;
-      
-      const fileSize = formatFileSize(selectedFile.size);
-      const nextFileInfo = {
-        name: selectedFile.name || apiData.filename || "Unknown",
-        type: selectedFile.type || "Unknown",
-        size: fileSize,
-      };
-
-      // 퍼센트 문자열(예: "95.00%")에서 숫자만 추출
-      const parsedConfidence = parseFloat(finalPred.confidence);
-      
-      const modelMapping = {
-        "출처 검증": "Water Mark",
-        "메타데이터 분석": "Meta Data",
-        "외부 검색 검증": "Model 4",
-        "시각적 이상 분석": "Model 3",
-        "포렌식 패턴 분석": "Model 5",
-      };
-
-      // 개별 모델 결과를 factors에 반영
-      const updatedFactors = defaultResult.factors.map((factor) => {
-        const targetModelName = modelMapping[factor.title];
-        const indPred = predictionObj.individual_predictions?.find(
-          (p) => p.model_name === targetModelName
-        );
-        if (!indPred) return factor;
-        const score = Math.round(parseFloat(indPred.confidence) * 100);
-        return {
-          ...factor,
-          score: Math.min(Math.max(score, 0), 100), // 0 ~ 100
-          progressValue: indPred.predicted_idx === 1 ? "AI 의심 (높음)" : "정상 (낮음)",
-        };
-      });
-
-      const nextResult = {
-        ...defaultResult, // 기존 구조(factors 등)를 유지
-        factors: updatedFactors,
-        summary: {
-          ...defaultResult.summary,
-          finalScore: parsedConfidence, 
-          // 0 이면 진짜, 1 이면 가짜
-          verdict: finalPred.predicted_idx === 1 ? "AI 생성 의심" : "실제 사진",
-          confidence: parsedConfidence / 100, // 0.95 형태 
-          description: "본 분석 결과는 AI 예측 모델 백엔드로부터 응답받은 실제 추론 데이터입니다.",
-        },
-        notes: {
-          ...defaultResult.notes,
-          sideItems: [
-            { label: "업로드 상태", value: "성공" },
-            { label: "분석 출처", value: "AI 모델 API" },
-            { label: "제공 요소", value: "5 가지 구조" },
-            { label: "API 연결", value: "연결 성공" },
-          ],
-        }
-      };
-
-      // 분석 결과, 파일 정보 등을 로컬 스토리지에 캐싱
-      localStorage.setItem(STORAGE_KEYS.result, JSON.stringify(nextResult));
-      localStorage.setItem(STORAGE_KEYS.file, JSON.stringify(nextFileInfo));
-      if (previewDataUrl) {
-        localStorage.setItem(STORAGE_KEYS.preview, previewDataUrl);
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.preview);
-      }
-
-      // 화면을 결과 페이지로 전환 및 데이터 적용
-      setResult(nextResult);
-      setSavedFileInfo(nextFileInfo);
-      setPage("result");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) {
-      console.error(error);
-      alert(`분석 중 오류가 발생했습니다: ${error.message}`);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // 결과 확인 후 다시 분석하기(업로드 창)로 돌아가는 핸들러
-  const handleBack = () => {
-    setPage("upload");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  const {
+    page,
+    selectedFile,
+    previewDataUrl,
+    result,
+    savedFileInfo,
+    isAnalyzing,
+    isDragActive,
+    setDragActive,
+    handleSelectedFile,
+    handleAnalyze,
+    handleBack,
+  } = useAnalysisState();
 
   return (
     <div
@@ -199,7 +34,6 @@ export default function App() {
         fontFamily: "Inter, sans-serif",
       }}
     >
-      {/* 폰트 및 전역 스타일 */}
       <style>{`
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -213,10 +47,8 @@ export default function App() {
         }
       `}</style>
 
-      {/* 헤더 섹션 */}
       <Header />
 
-      {/* 메인 라우팅 (페이지) 처리부 */}
       {page === "upload" ? (
         <UploadPage
           selectedFile={selectedFile}
@@ -238,7 +70,6 @@ export default function App() {
         />
       )}
 
-      {/* 푸터 섹션 */}
       <Footer />
     </div>
   );
