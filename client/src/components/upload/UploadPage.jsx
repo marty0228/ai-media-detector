@@ -2,7 +2,6 @@ import React, { useRef } from "react";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
 import { InfoCard } from "../common/InfoCard";
-import { formatFileSize } from "../../utils/utils";
 
 function FactorRow({ title, subtitle, icon }) {
   return (
@@ -41,7 +40,7 @@ export function UploadPage({
   const handleClearFile = () => {
     onClearFile?.();
 
-    // 같은 파일 다시 선택 가능하게 input 값도 초기화
+    // 같은 파일 다시 선택 가능하도록 input 값 초기화
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -50,6 +49,7 @@ export function UploadPage({
   const handleDrop = async (event) => {
     event.preventDefault();
     setDragActive(false);
+
     const file = event.dataTransfer?.files?.[0];
     if (file) {
       await onSelectFile(file);
@@ -190,14 +190,14 @@ export function UploadPage({
 
               <button
                 type="button"
-                disabled={!hasFile || isAnalyzing}
+                disabled={!hasRealSelectedFile || isAnalyzing}
                 onClick={onAnalyze}
                 className="px-8 py-4 font-bold rounded-[1.5rem] transition-all flex items-center gap-2 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: COLORS.surfaceContainerLowest,
                   color: COLORS.primary,
                   border: `1px solid rgba(193,199,203,0.3)`,
-                  opacity: !hasFile || isAnalyzing ? 0.5 : 1,
+                  opacity: !hasRealSelectedFile || isAnalyzing ? 0.5 : 1,
                 }}
               >
                 {isAnalyzing ? "분석 중..." : "AI 이미지 판독"}
@@ -254,8 +254,7 @@ export function UploadPage({
             }}
           >
             {hasPreview && (
-              <bu
-                tton
+              <button
                 type="button"
                 onClick={handleClearFile}
                 className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center"
@@ -270,7 +269,7 @@ export function UploadPage({
                 title="선택한 이미지 제거"
               >
                 <MaterialIcon className="text-[20px]">close</MaterialIcon>
-              </bu>
+              </button>
             )}
 
             {hasPreview ? (
@@ -327,6 +326,16 @@ export function UploadPage({
               />
             </div>
           )}
+
+          {!hasRealSelectedFile && hasPreview && (
+            <p
+              className="text-sm mt-4"
+              style={{ color: COLORS.onSurfaceVariant }}
+            >
+              새로고침 후에는 보안상 원본 파일이 유지되지 않습니다. 분석하려면
+              이미지를 다시 선택해주세요.
+            </p>
+          )}
         </div>
 
         <div
@@ -348,7 +357,7 @@ export function UploadPage({
             style={{ color: COLORS.onSurfaceVariant }}
           >
             분석 결과 페이지는 설명 가능한 AI(XAI) 구성 요소를 기반으로
-            정렬됩니다. 백엔드 알고리즘에서 어떠한 포멧의 데이터가 넘어오더라도
+            정렬됩니다. 백엔드 알고리즘에서 어떠한 포맷의 데이터가 넘어오더라도
             이 동일한 시각적 구조에서 정보를 깔끔하게 열람할 수 있습니다.
           </p>
 
