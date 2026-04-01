@@ -1,24 +1,146 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
 
-function FactorRow({ title, subtitle, icon }) {
-  return (
+function FactorRow({
+  title,
+  subtitle,
+  icon,
+  badge,
+  reverse = false,
+  isDarkMode,
+}) {
+  const rowRef = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const target = rowRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.unobserve(target);
+        }
+      },
+      {
+        threshold: 0.28,
+      },
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const textBlock = (
     <div
-      className="flex items-center justify-between rounded-[1rem] px-4 py-4"
       style={{
-        backgroundColor: COLORS.surfaceContainerLow,
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0px)" : "translateY(36px)",
+        transition: "all 0.75s cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
-      <div>
-        <div className="text-sm font-bold" style={{ color: COLORS.primary }}>
-          {title}
-        </div>
-        <div className="text-xs" style={{ color: COLORS.onSurfaceVariant }}>
-          {subtitle}
+      <div
+        className="text-xs font-extrabold uppercase tracking-[0.16em] mb-4"
+        style={{
+          color: isDarkMode ? "#ffffff" : COLORS.primaryContainer,
+        }}
+      >
+        {badge}
+      </div>
+
+      <h4
+        className="text-3xl md:text-4xl font-extrabold leading-tight mb-4 break-keep"
+        style={{
+          color: isDarkMode ? "#ffffff" : COLORS.primary,
+          fontFamily: "Manrope, sans-serif",
+        }}
+      >
+        {title}
+      </h4>
+
+      <p
+        className="text-sm md:text-base leading-relaxed break-keep max-w-md"
+        style={{
+          color: isDarkMode
+            ? "rgba(255,255,255,0.74)"
+            : COLORS.onSurfaceVariant,
+        }}
+      >
+        {subtitle}
+      </p>
+    </div>
+  );
+
+  const visualBlock = (
+    <div
+      className="flex justify-center"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible
+          ? "translateY(0px)"
+          : `translateY(${reverse ? "44px" : "36px"})`,
+        transition: "all 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+      }}
+    >
+      <div
+        className="relative w-[260px] h-[260px] md:w-[340px] md:h-[340px] rounded-[2rem] overflow-hidden"
+        style={{
+          background: `linear-gradient(
+            180deg,
+            ${COLORS.primaryFixed || "rgba(193,228,242,0.35)"} 0%,
+            ${COLORS.surfaceContainerLow} 100%
+          )`,
+          border: "1px solid rgba(12,48,60,0.08)",
+        }}
+      >
+        <div
+          className="absolute inset-x-0 bottom-16 h-px"
+          style={{ backgroundColor: "rgba(12,48,60,0.08)" }}
+        />
+
+        <div
+          className="absolute bottom-0 right-0 w-[62%] h-[62%]"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(12,48,60,0.05) 0%, rgba(12,48,60,0.00) 100%)",
+            clipPath: "polygon(100% 0, 0 100%, 100% 100%)",
+          }}
+        />
+
+        <div
+          className="absolute left-1/2 top-1/2 flex items-center justify-center rounded-[1.6rem]"
+          style={{
+            width: "160px",
+            height: "160px",
+            transform: "translate(-50%, -50%)",
+            background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.primaryContainer} 100%)`,
+            boxShadow: "0 20px 34px rgba(12,48,60,0.18)",
+          }}
+        >
+          <MaterialIcon className="text-white text-[82px]">{icon}</MaterialIcon>
         </div>
       </div>
-      <MaterialIcon style={{ color: COLORS.primary }}>{icon}</MaterialIcon>
+    </div>
+  );
+
+  return (
+    <div ref={rowRef} className="py-8 md:py-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-center">
+        {reverse ? (
+          <>
+            {visualBlock}
+            {textBlock}
+          </>
+        ) : (
+          <>
+            {textBlock}
+            {visualBlock}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -115,7 +237,7 @@ export function UploadPage({
       </section>
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <section className="grid grid-cols-1 lg:grid-cols-[1.25fr,0.75fr] gap-8">
+        <section>
           <section id="image-analysis" className="scroll-mt-24">
             <div
               className="relative rounded-[2rem] overflow-hidden"
@@ -262,14 +384,14 @@ export function UploadPage({
                     className="absolute inset-0"
                     style={{
                       background: `
-                        linear-gradient(
-                          to top,
-                          rgba(12, 48, 60, 0.88) 0%,
-                          rgba(15, 93, 115, 0.58) 28%,
-                          rgba(47, 141, 246, 0.18) 70%,
-                          rgba(12, 48, 60, 0.08) 100%
-                        )
-                      `,
+                  linear-gradient(
+                    to top,
+                    rgba(12, 48, 60, 0.88) 0%,
+                    rgba(15, 93, 115, 0.58) 28%,
+                    rgba(47, 141, 246, 0.18) 70%,
+                    rgba(12, 48, 60, 0.08) 100%
+                  )
+                `,
                     }}
                   />
 
@@ -439,60 +561,88 @@ export function UploadPage({
 
           <section
             id="analysis-elements"
-            className="p-6 rounded-[1.5rem] border shadow-sm scroll-mt-24 transition-colors duration-300 self-start"
-            style={{
-              backgroundColor: COLORS.surfaceContainerLowest,
-              borderColor: "rgba(193,199,203,0.1)",
-            }}
+            className="scroll-mt-24 pt-24 md:pt-28 pb-10"
+            style={{ backgroundColor: isDarkMode ? "#000000" : "#ffffff" }}
           >
-            <h3
-              className="text-2xl font-bold mb-2"
-              style={{
-                color: COLORS.primary,
-                fontFamily: "Manrope, sans-serif",
-              }}
-            >
-              5-요소 분석 모델
-            </h3>
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-14 md:mb-20">
+                <div
+                  className="text-xs font-extrabold uppercase tracking-[0.16em] mb-4"
+                  style={{
+                    color: isDarkMode ? "#ffffff" : COLORS.primaryContainer,
+                  }}
+                >
+                  Analysis Model
+                </div>
 
-            <p
-              className="text-sm mb-6 break-keep"
-              style={{
-                color: COLORS.onSurfaceVariant,
-              }}
-            >
-              분석 결과 페이지는 설명 가능한 AI(XAI) 구성 요소를 기반으로
-              정렬됩니다. 백엔드 알고리즘에서 어떠한 포맷의 데이터가
-              넘어오더라도 이 동일한 시각적 구조에서 정보를 깔끔하게 열람할 수
-              있습니다.
-            </p>
+                <h3
+                  className="text-4xl md:text-5xl font-extrabold mb-5 break-keep"
+                  style={{
+                    color: isDarkMode ? "#ffffff" : COLORS.primary,
+                    fontFamily: "Manrope, sans-serif",
+                  }}
+                >
+                  5-요소 분석 모델
+                </h3>
 
-            <div className="space-y-3">
-              <FactorRow
-                title="출처 검증"
-                subtitle="사진의 원본 출처 및 생성 이력 파악"
-                icon="shield_lock"
-              />
-              <FactorRow
-                title="메타데이터 분석"
-                subtitle="EXIF 정보 및 카메라 헤더 일관성 검사"
-                icon="badge"
-              />
-              <FactorRow
-                title="외부 검색 검증"
-                subtitle="웹 크롤링을 통한 원본 사진 대조"
-                icon="travel_explore"
-              />
-              <FactorRow
-                title="시각적 이상 분석"
-                subtitle="사물 왜곡 현상 및 인간 식별 가능 단계 오류 확인"
-                icon="visibility"
-              />
-              <FactorRow
-                title="포렌식 패턴 분석"
-                subtitle="압축 알고리즘, 노이즈, 픽셀 징후 정밀 판독"
-                icon="biotech"
-              />
+                <p
+                  className="text-base md:text-lg leading-relaxed max-w-3xl break-keep"
+                  style={{
+                    color: isDarkMode
+                      ? "rgba(255,255,255,0.74)"
+                      : COLORS.onSurfaceVariant,
+                  }}
+                >
+                  분석 결과 페이지는 설명 가능한 AI(XAI) 구성 요소를 기반으로
+                  정렬됩니다. 각 요소는 독립적으로 해석 가능하며, 사용자는 어떤
+                  근거로 판별 결과가 도출되었는지 시각적으로 순서대로 확인할 수
+                  있습니다.
+                </p>
+              </div>
+
+              <div className="space-y-2 md:space-y-6">
+                <FactorRow
+                  isDarkMode={isDarkMode}
+                  badge="Provenance"
+                  title="출처 검증"
+                  subtitle="사진의 원본 출처와 생성 이력, 유통 경로를 바탕으로 신뢰 가능한 원본 이미지인지 검토합니다."
+                  icon="shield_lock"
+                />
+
+                <FactorRow
+                  isDarkMode={isDarkMode}
+                  reverse
+                  badge="Metadata"
+                  title="메타데이터 분석"
+                  subtitle="EXIF 정보, 저장 포맷, 장치 헤더의 일관성을 확인하여 촬영 이미지와 생성 이미지 간 차이를 탐색합니다."
+                  icon="badge"
+                />
+
+                <FactorRow
+                  isDarkMode={isDarkMode}
+                  badge="Reverse Search"
+                  title="외부 검색 검증"
+                  subtitle="웹상에 존재하는 유사 이미지와의 대조를 통해 원본 여부, 재사용 흔적, 생성 이미지 유통 가능성을 검토합니다."
+                  icon="travel_explore"
+                />
+
+                <FactorRow
+                  isDarkMode={isDarkMode}
+                  reverse
+                  badge="Visual Cues"
+                  title="시각적 이상 분석"
+                  subtitle="인물의 손가락, 경계선, 반사, 조명, 배경 연결부 등 사람이 직관적으로 어색함을 느끼는 패턴을 분석합니다."
+                  icon="visibility"
+                />
+
+                <FactorRow
+                  isDarkMode={isDarkMode}
+                  badge="Forensics"
+                  title="포렌식 패턴 분석"
+                  subtitle="압축 흔적, 노이즈 분포, 픽셀 단위 왜곡, 텍스처 패턴 등을 바탕으로 생성 이미지의 잔여 신호를 탐지합니다."
+                  icon="biotech"
+                />
+              </div>
             </div>
           </section>
         </section>
