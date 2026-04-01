@@ -21,6 +21,7 @@ export default function App() {
     isDragActive,
     setDragActive,
     handleSelectedFile,
+    handleClearSelectedFile,
     handleAnalyze,
     handleBack,
   } = useAnalysisState();
@@ -52,10 +53,12 @@ export default function App() {
       {page === "upload" ? (
         <UploadPage
           selectedFile={selectedFile}
+          savedFileInfo={savedFileInfo}
           previewDataUrl={previewDataUrl}
           isDragActive={isDragActive}
           isAnalyzing={isAnalyzing}
           onSelectFile={handleSelectedFile}
+          onClearFile={handleClearSelectedFile}
           onAnalyze={handleAnalyze}
           setDragActive={setDragActive}
         />

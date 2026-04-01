@@ -25,16 +25,27 @@ function FactorRow({ title, subtitle, icon }) {
 
 export function UploadPage({
   selectedFile,
+  savedFileInfo,
   previewDataUrl,
   isDragActive,
   isAnalyzing,
   onSelectFile,
+  onClearFile,
   onAnalyze,
   setDragActive,
 }) {
   const fileInputRef = useRef(null);
 
   const openFileDialog = () => fileInputRef.current?.click();
+
+  const handleClearFile = () => {
+    onClearFile?.();
+
+    // 같은 파일 다시 선택 가능하게 input 값도 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   const handleDrop = async (event) => {
     event.preventDefault();
@@ -45,7 +56,12 @@ export function UploadPage({
     }
   };
 
-  const hasFile = Boolean(selectedFile);
+  const hasPreview = Boolean(previewDataUrl);
+  const hasStoredFileInfo = Boolean(savedFileInfo?.name);
+  const hasRealSelectedFile = Boolean(selectedFile);
+  const hasFile = Boolean(
+    selectedFile || previewDataUrl || savedFileInfo?.name,
+  );
 
   return (
     <main className="max-w-7xl mx-auto px-6 py-12">
@@ -60,18 +76,21 @@ export function UploadPage({
         >
           AI 기반
         </div>
+
         <h1
           className="text-5xl md:text-6xl font-extrabold mb-6 leading-tight tracking-tight break-keep"
           style={{ color: COLORS.primary, fontFamily: "Manrope, sans-serif" }}
         >
           합성 시대의 진위 판독기
         </h1>
+
         <p
           className="text-lg leading-relaxed break-keep"
           style={{ color: COLORS.onSurfaceVariant }}
         >
-          최첨단 신경망 모델을 활용하여 디지털 이미지의 진위를 검증합니다.
-          어떤 사진이든 업로드하여 기원과 무결성에 대한 종합적인 포렌식 분석 리포트를 받아보세요.
+          최첨단 신경망 모델을 활용하여 디지털 이미지의 진위를 검증합니다. 어떤
+          사진이든 업로드하여 기원과 무결성에 대한 종합적인 포렌식 분석 리포트를
+          받아보세요.
         </p>
       </section>
 
@@ -142,14 +161,18 @@ export function UploadPage({
             >
               이미지를 놓아서 분석하기
             </h3>
+
             <p className="mb-3" style={{ color: COLORS.onSurfaceVariant }}>
               최대 25MB 이하의 PNG, JPG, WEBP 허용
             </p>
+
             <p
               className="text-sm mb-8 max-w-xl break-keep"
               style={{ color: COLORS.outline }}
             >
-              현재 버전은 출처, 메타데이터, 외부 검색, 시각적 오류, 포렌식 패턴이라는 5가지 설명 가능한 구성 요소로 분석 결과를 정리하여 보여줍니다.
+              현재 버전은 출처, 메타데이터, 외부 검색, 시각적 오류, 포렌식
+              패턴이라는 5가지 설명 가능한 구성 요소로 분석 결과를 정리하여
+              보여줍니다.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-4">
@@ -210,6 +233,7 @@ export function UploadPage({
                 결과 대시보드로 이동하기 전 업로드된 이미지를 미리 봅니다.
               </p>
             </div>
+
             <span
               className="px-3 py-1 rounded-full text-xs font-bold uppercase"
               style={{
@@ -223,13 +247,33 @@ export function UploadPage({
           </div>
 
           <div
-            className="rounded-[1.5rem] overflow-hidden min-h-[360px] flex items-center justify-center"
+            className="relative rounded-[1.5rem] overflow-hidden min-h-[360px] flex items-center justify-center"
             style={{
               backgroundColor: COLORS.surfaceContainerLow,
               border: `1px solid rgba(193,199,203,0.2)`,
             }}
           >
-            {previewDataUrl ? (
+            {hasPreview && (
+              <bu
+                tton
+                type="button"
+                onClick={handleClearFile}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: "rgba(12, 48, 60, 0.78)",
+                  color: "#ffffff",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  backdropFilter: "blur(8px)",
+                  cursor: "pointer",
+                }}
+                aria-label="선택한 이미지 제거"
+                title="선택한 이미지 제거"
+              >
+                <MaterialIcon className="text-[20px]">close</MaterialIcon>
+              </bu>
+            )}
+
+            {hasPreview ? (
               <img
                 src={previewDataUrl}
                 alt="Selected preview"
@@ -245,6 +289,7 @@ export function UploadPage({
                     image
                   </MaterialIcon>
                 </div>
+
                 <h4
                   className="text-xl font-bold mb-2"
                   style={{
@@ -254,26 +299,31 @@ export function UploadPage({
                 >
                   이미지가 없습니다
                 </h4>
+
                 <p
                   className="text-sm max-w-md"
                   style={{ color: COLORS.onSurfaceVariant }}
                 >
-                  우측 혹은 위에서 버튼을 눌러 이미지를 탐색기에 첨부해 주세요.
+                  위에서 이미지를 업로드하면 이 영역에 미리보기가 표시됩니다.
                 </p>
               </div>
             )}
           </div>
 
-          {hasFile && (
+          {hasStoredFileInfo && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-              <InfoCard label="파일 이름" value={selectedFile.name} breakAll />
+              <InfoCard
+                label="파일 이름"
+                value={savedFileInfo.name || "알 수 없음"}
+                breakAll
+              />
               <InfoCard
                 label="파일 확장자"
-                value={selectedFile.type || "알 수 없음"}
+                value={savedFileInfo.type || "알 수 없음"}
               />
               <InfoCard
                 label="파일 용량"
-                value={formatFileSize(selectedFile.size)}
+                value={savedFileInfo.size || "알 수 없음"}
               />
             </div>
           )}
@@ -292,11 +342,14 @@ export function UploadPage({
           >
             5-요소 분석 모델
           </h3>
+
           <p
             className="text-sm mb-6 break-keep"
             style={{ color: COLORS.onSurfaceVariant }}
           >
-            분석 결과 페이지는 설명 가능한 AI(XAI) 구성 요소를 기반으로 정렬됩니다. 백엔드 알고리즘에서 어떠한 포멧의 데이터가 넘어오더라도 이 동일한 시각적 구조에서 정보를 깔끔하게 열람할 수 있습니다.
+            분석 결과 페이지는 설명 가능한 AI(XAI) 구성 요소를 기반으로
+            정렬됩니다. 백엔드 알고리즘에서 어떠한 포멧의 데이터가 넘어오더라도
+            이 동일한 시각적 구조에서 정보를 깔끔하게 열람할 수 있습니다.
           </p>
 
           <div className="space-y-3">

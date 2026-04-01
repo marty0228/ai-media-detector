@@ -68,12 +68,37 @@ export function useAnalysisState() {
     }
 
     const optimizedPreview = await createOptimizedPreview(file);
+
+    const nextFileInfo = {
+      name: file.name || "Unknown",
+      type: file.type || "Unknown",
+      size: formatFileSize(file.size),
+    };
+
     setSelectedFile(file);
     setPreviewDataUrl(optimizedPreview);
+    setSavedFileInfo(nextFileInfo);
+
+    localStorage.setItem(STORAGE_KEYS.preview, optimizedPreview);
+    localStorage.setItem(STORAGE_KEYS.file, JSON.stringify(nextFileInfo));
+  };
+
+  const handleClearSelectedFile = () => {
+    setSelectedFile(null);
+    setPreviewDataUrl("");
+    setSavedFileInfo(defaultFile);
+
+    localStorage.removeItem(STORAGE_KEYS.preview);
+    localStorage.removeItem(STORAGE_KEYS.file);
   };
 
   const handleAnalyze = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      alert(
+        "새로고침 후에는 보안상 원본 파일이 유지되지 않습니다. 다시 선택 후 분석해주세요.",
+      );
+      return;
+    }
 
     try {
       setIsAnalyzing(true);
@@ -197,6 +222,7 @@ export function useAnalysisState() {
     isDragActive,
     setDragActive,
     handleSelectedFile,
+    handleClearSelectedFile,
     handleAnalyze,
     handleBack,
     resetAnalysisState,
