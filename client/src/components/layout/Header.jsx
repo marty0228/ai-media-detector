@@ -169,17 +169,6 @@ export function Header({
 
               <button
                 type="button"
-                onClick={() => scrollToSection("image-preview")}
-                onMouseEnter={() => setHoveredItem("image-preview")}
-                onMouseLeave={() => setHoveredItem(null)}
-                className="font-semibold text-base bg-transparent border-0 p-0 cursor-pointer"
-                style={navButtonStyle("image-preview")}
-              >
-                이미지 미리보기
-              </button>
-
-              <button
-                type="button"
                 onClick={() => scrollToSection("analysis-elements")}
                 onMouseEnter={() => setHoveredItem("analysis-elements")}
                 onMouseLeave={() => setHoveredItem(null)}

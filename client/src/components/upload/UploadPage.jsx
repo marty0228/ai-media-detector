@@ -1,7 +1,6 @@
 import React, { useRef } from "react";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
-import { InfoCard } from "../common/InfoCard";
 
 function FactorRow({ title, subtitle, icon }) {
   return (
@@ -61,9 +60,6 @@ export function UploadPage({
   const hasPreview = Boolean(previewDataUrl);
   const hasStoredFileInfo = Boolean(savedFileInfo?.name);
   const hasRealSelectedFile = Boolean(selectedFile);
-  const hasFile = Boolean(
-    selectedFile || previewDataUrl || savedFileInfo?.name,
-  );
 
   return (
     <main
@@ -119,41 +115,28 @@ export function UploadPage({
       </section>
 
       <div className="max-w-7xl mx-auto px-6 py-12">
-        <section id="image-analysis" className="mb-12 scroll-mt-24">
-          <div
-            className="p-4 rounded-[1.75rem] transition-colors duration-300"
-            style={{
-              backgroundColor: COLORS.surfaceContainerLowest,
-              boxShadow: "0 40px 60px -10px rgba(14,30,36,0.05)",
-            }}
-          >
+        <section className="grid grid-cols-1 lg:grid-cols-[1.25fr,0.75fr] gap-8">
+          <section id="image-analysis" className="scroll-mt-24">
             <div
-              className="border-2 border-dashed rounded-[1.5rem] p-12 flex flex-col items-center justify-center text-center cursor-pointer transition-colors"
+              className="relative rounded-[2rem] overflow-hidden"
               style={{
-                backgroundColor: isDragActive
-                  ? COLORS.surfaceContainerHigh
-                  : COLORS.surfaceContainerLow,
-                borderColor: isDragActive
-                  ? COLORS.primaryContainer
-                  : "rgba(193,199,203,0.3)",
-              }}
-              onClick={(event) => {
-                if (event.target.closest("button")) return;
-                openFileDialog();
+                minHeight: "620px",
+                background:
+                  "linear-gradient(135deg, #0c303c 0%, #0f5d73 42%, #2f8df6 100%)",
               }}
               onDragEnter={(event) => {
                 event.preventDefault();
-                setDragActive(true);
+                if (!hasPreview) setDragActive(true);
               }}
               onDragOver={(event) => {
                 event.preventDefault();
-                setDragActive(true);
+                if (!hasPreview) setDragActive(true);
               }}
               onDragLeave={(event) => {
                 event.preventDefault();
-                setDragActive(false);
+                if (!hasPreview) setDragActive(false);
               }}
-              onDrop={handleDrop}
+              onDrop={hasPreview ? undefined : handleDrop}
             >
               <input
                 ref={fileInputRef}
@@ -168,227 +151,295 @@ export function UploadPage({
                 }}
               />
 
-              <div
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-6"
-                style={{
-                  backgroundColor: COLORS.primaryContainer,
-                }}
-              >
-                <MaterialIcon className="text-white text-3xl">
-                  cloud_upload
-                </MaterialIcon>
-              </div>
-
-              <h3
-                className="text-2xl font-bold mb-2"
-                style={{
-                  color: COLORS.primary,
-                  fontFamily: "Manrope, sans-serif",
-                }}
-              >
-                이미지를 놓아서 분석하기
-              </h3>
-
-              <p
-                className="mb-3"
-                style={{
-                  color: COLORS.onSurfaceVariant,
-                }}
-              >
-                최대 25MB 이하의 PNG, JPG, WEBP 허용
-              </p>
-
-              <p
-                className="text-sm mb-8 max-w-xl break-keep"
-                style={{
-                  color: COLORS.outline,
-                }}
-              >
-                현재 버전은 출처, 메타데이터, 외부 검색, 시각적 오류, 포렌식
-                패턴이라는 5가지 설명 가능한 구성 요소로 분석 결과를 정리하여
-                보여줍니다.
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-4">
-                <button
-                  type="button"
-                  onClick={openFileDialog}
-                  className="px-8 py-4 font-bold rounded-[1.5rem] transition-all flex items-center gap-2 text-white"
-                  style={{
-                    backgroundColor: COLORS.primaryContainer,
-                  }}
-                >
-                  이미지 선택
-                  <MaterialIcon className="text-sm">arrow_forward</MaterialIcon>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={!hasRealSelectedFile || isAnalyzing}
-                  onClick={onAnalyze}
-                  className="px-8 py-4 font-bold rounded-[1.5rem] transition-all flex items-center gap-2 disabled:cursor-not-allowed"
-                  style={{
-                    backgroundColor: COLORS.surfaceContainerLowest,
-                    color: COLORS.primary,
-                    border: `1px solid rgba(193,199,203,0.3)`,
-                    opacity: !hasRealSelectedFile || isAnalyzing ? 0.5 : 1,
-                  }}
-                >
-                  {isAnalyzing ? "분석 중..." : "AI 이미지 판독"}
-                  <MaterialIcon className="text-sm">
-                    {isAnalyzing ? "hourglass_top" : "analytics"}
-                  </MaterialIcon>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-[1.1fr,0.9fr] gap-8">
-          <div
-            id="image-preview"
-            className="p-6 rounded-[1.5rem] border shadow-sm scroll-mt-24 transition-colors duration-300"
-            style={{
-              backgroundColor: COLORS.surfaceContainerLowest,
-              borderColor: "rgba(193,199,203,0.1)",
-            }}
-          >
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div>
-                <h3
-                  className="text-2xl font-bold mb-1"
-                  style={{
-                    color: COLORS.primary,
-                    fontFamily: "Manrope, sans-serif",
-                  }}
-                >
-                  선택된 이미지
-                </h3>
-                <p
-                  className="text-sm"
-                  style={{
-                    color: COLORS.onSurfaceVariant,
-                  }}
-                >
-                  결과 대시보드로 이동하기 전 업로드된 이미지를 미리 봅니다.
-                </p>
-              </div>
-
-              <span
-                className="px-3 py-1 rounded-full text-xs font-bold uppercase"
-                style={{
-                  backgroundColor: COLORS.primaryFixed,
-                  color: "#ffffff",
-                  letterSpacing: "0.15em",
-                }}
-              >
-                {hasFile ? "준비 완료" : "업로드 대기"}
-              </span>
-            </div>
-
-            <div
-              className="relative rounded-[1.5rem] overflow-hidden min-h-[360px] flex items-center justify-center"
-              style={{
-                backgroundColor: COLORS.surfaceContainerLow,
-                border: `1px solid rgba(193,199,203,0.2)`,
-              }}
-            >
-              {hasPreview && (
-                <button
-                  type="button"
-                  onClick={handleClearFile}
-                  className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all"
-                  style={{
-                    backgroundColor: "rgba(12, 48, 60, 0.78)",
-                    color: "#ffffff",
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    backdropFilter: "blur(8px)",
-                    cursor: "pointer",
-                  }}
-                  aria-label="선택한 이미지 제거"
-                  title="선택한 이미지 제거"
-                >
-                  <MaterialIcon className="text-[20px]">close</MaterialIcon>
-                </button>
-              )}
-
-              {hasPreview ? (
-                <img
-                  src={previewDataUrl}
-                  alt="Selected preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center p-8">
+              {!hasPreview ? (
+                <>
                   <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
+                    className="absolute inset-0"
                     style={{
-                      backgroundColor: COLORS.primaryContainer,
+                      background:
+                        "radial-gradient(circle at 50% 40%, rgba(255,255,255,0.10), transparent 28%)",
                     }}
-                  >
-                    <MaterialIcon className="text-white text-3xl">
-                      image
-                    </MaterialIcon>
+                  />
+
+                  <div className="relative h-full min-h-[620px]">
+                    <div
+                      className="absolute inset-0 rounded-[2rem] border flex flex-col items-center justify-center text-center px-8 md:px-12"
+                      style={{
+                        background: isDragActive
+                          ? "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(193,228,242,0.14) 100%)"
+                          : "linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(193,228,242,0.08) 100%)",
+                        borderColor: isDragActive
+                          ? "rgba(255,255,255,0.26)"
+                          : "rgba(255,255,255,0.16)",
+                        backdropFilter: "blur(18px)",
+                        boxShadow:
+                          "inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 30px rgba(4,20,28,0.10)",
+                        minHeight: "580px",
+                        cursor: "pointer",
+                      }}
+                      onClick={(event) => {
+                        if (event.target.closest("button")) return;
+                        openFileDialog();
+                      }}
+                    >
+                      <div
+                        className="rounded-full flex items-center justify-center mb-6"
+                        style={{
+                          width: "72px",
+                          height: "72px",
+                          background:
+                            "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(193,228,242,0.12) 100%)",
+                          border: "1px solid rgba(255,255,255,0.16)",
+                          backdropFilter: "blur(14px)",
+                        }}
+                      >
+                        <MaterialIcon className="text-white text-3xl">
+                          cloud_upload
+                        </MaterialIcon>
+                      </div>
+
+                      <h3
+                        className="text-3xl md:text-4xl font-extrabold mb-3 break-keep"
+                        style={{
+                          color: "#ffffff",
+                          fontFamily: "Manrope, sans-serif",
+                          textShadow: "0 6px 20px rgba(3,18,24,0.18)",
+                        }}
+                      >
+                        이미지를 놓아서 분석하기
+                      </h3>
+
+                      <p
+                        className="mb-4 text-base md:text-xl"
+                        style={{
+                          color: "rgba(240,248,252,0.92)",
+                        }}
+                      >
+                        최대 25MB 이하의 PNG, JPG, WEBP 허용
+                      </p>
+
+                      <p
+                        className="text-sm md:text-base mb-10 max-w-2xl break-keep"
+                        style={{
+                          color: "rgba(231,244,250,0.78)",
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        현재 버전은 출처, 메타데이터, 외부 검색, 시각적 오류,
+                        포렌식 패턴이라는 5가지 설명 가능한 구성 요소로 분석
+                        결과를 정리하여 보여줍니다.
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={openFileDialog}
+                        className="px-8 py-4 font-bold rounded-[1.5rem] inline-flex items-center gap-2 text-white"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(255,255,255,0.18) 0%, rgba(193,228,242,0.14) 100%)",
+                          border: "1px solid rgba(255,255,255,0.16)",
+                          backdropFilter: "blur(14px)",
+                          boxShadow: "0 10px 24px rgba(6, 24, 32, 0.12)",
+                        }}
+                      >
+                        이미지 선택
+                        <MaterialIcon className="text-sm">
+                          arrow_forward
+                        </MaterialIcon>
+                      </button>
+                    </div>
                   </div>
+                </>
+              ) : (
+                <>
+                  <img
+                    src={previewDataUrl}
+                    alt="Selected preview"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
 
-                  <h4
-                    className="text-xl font-bold mb-2"
+                  <div
+                    className="absolute inset-0"
                     style={{
-                      color: COLORS.primary,
-                      fontFamily: "Manrope, sans-serif",
+                      background: `
+                        linear-gradient(
+                          to top,
+                          rgba(12, 48, 60, 0.88) 0%,
+                          rgba(15, 93, 115, 0.58) 28%,
+                          rgba(47, 141, 246, 0.18) 70%,
+                          rgba(12, 48, 60, 0.08) 100%
+                        )
+                      `,
                     }}
-                  >
-                    이미지가 없습니다
-                  </h4>
+                  />
 
-                  <p
-                    className="text-sm max-w-md"
-                    style={{
-                      color: COLORS.onSurfaceVariant,
-                    }}
-                  >
-                    위에서 이미지를 업로드하면 이 영역에 미리보기가 표시됩니다.
-                  </p>
-                </div>
+                  <div className="relative h-full min-h-[620px] p-6 flex flex-col justify-between">
+                    <div className="flex items-start justify-between gap-4">
+                      <div
+                        className="px-4 py-2 rounded-full text-xs font-bold uppercase inline-flex items-center gap-2"
+                        style={{
+                          backgroundColor: "rgba(255,255,255,0.16)",
+                          color: "#ffffff",
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          backdropFilter: "blur(12px)",
+                          letterSpacing: "0.14em",
+                        }}
+                      >
+                        <MaterialIcon className="text-sm">image</MaterialIcon>
+                        업로드 완료
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleClearFile}
+                        className="w-11 h-11 rounded-full flex items-center justify-center"
+                        style={{
+                          backgroundColor: "rgba(12,48,60,0.38)",
+                          color: "#ffffff",
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          backdropFilter: "blur(12px)",
+                        }}
+                        aria-label="선택한 이미지 제거"
+                        title="선택한 이미지 제거"
+                      >
+                        <MaterialIcon className="text-[20px]">
+                          close
+                        </MaterialIcon>
+                      </button>
+                    </div>
+
+                    <div
+                      className="rounded-[1.6rem] p-5 md:p-6"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(12,48,60,0.34) 0%, rgba(15,93,115,0.28) 52%, rgba(47,141,246,0.18) 100%)",
+                        border: "1px solid rgba(255,255,255,0.16)",
+                        backdropFilter: "blur(18px)",
+                        boxShadow:
+                          "0 16px 36px rgba(4, 20, 28, 0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                        <div
+                          className="rounded-[1rem] px-4 py-4"
+                          style={{
+                            backgroundColor: "rgba(255,255,255,0.10)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                          }}
+                        >
+                          <div
+                            className="text-xs mb-2"
+                            style={{ color: "rgba(233,245,251,0.72)" }}
+                          >
+                            파일 이름
+                          </div>
+                          <div
+                            className="text-sm font-bold break-all"
+                            style={{ color: "#ffffff" }}
+                          >
+                            {savedFileInfo?.name || "알 수 없음"}
+                          </div>
+                        </div>
+
+                        <div
+                          className="rounded-[1rem] px-4 py-4"
+                          style={{
+                            backgroundColor: "rgba(255,255,255,0.10)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                          }}
+                        >
+                          <div
+                            className="text-xs mb-2"
+                            style={{ color: "rgba(233,245,251,0.72)" }}
+                          >
+                            파일 확장자
+                          </div>
+                          <div
+                            className="text-sm font-bold"
+                            style={{ color: "#ffffff" }}
+                          >
+                            {savedFileInfo?.type || "알 수 없음"}
+                          </div>
+                        </div>
+
+                        <div
+                          className="rounded-[1rem] px-4 py-4"
+                          style={{
+                            backgroundColor: "rgba(255,255,255,0.10)",
+                            border: "1px solid rgba(255,255,255,0.10)",
+                          }}
+                        >
+                          <div
+                            className="text-xs mb-2"
+                            style={{ color: "rgba(233,245,251,0.72)" }}
+                          >
+                            파일 용량
+                          </div>
+                          <div
+                            className="text-sm font-bold"
+                            style={{ color: "#ffffff" }}
+                          >
+                            {savedFileInfo?.size || "알 수 없음"}
+                          </div>
+                        </div>
+                      </div>
+
+                      {!hasRealSelectedFile && hasStoredFileInfo && (
+                        <p
+                          className="text-sm mb-5"
+                          style={{ color: "rgba(236,247,252,0.82)" }}
+                        >
+                          새로고침 후에는 보안상 원본 파일이 유지되지 않습니다.
+                          분석하려면 이미지를 다시 선택해주세요.
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={openFileDialog}
+                          className="px-6 py-3 rounded-[1rem] font-bold inline-flex items-center gap-2"
+                          style={{
+                            backgroundColor: "rgba(255,255,255,0.12)",
+                            color: "#ffffff",
+                            border: "1px solid rgba(255,255,255,0.16)",
+                          }}
+                        >
+                          <MaterialIcon className="text-sm">
+                            refresh
+                          </MaterialIcon>
+                          다시 선택
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={!hasRealSelectedFile || isAnalyzing}
+                          onClick={onAnalyze}
+                          className="px-6 py-3 rounded-[1rem] font-bold inline-flex items-center gap-2 disabled:cursor-not-allowed"
+                          style={{
+                            backgroundColor: "rgba(242, 250, 255, 0.96)",
+                            color: COLORS.primary,
+                            boxShadow: "0 8px 20px rgba(9, 34, 46, 0.12)",
+                            opacity:
+                              !hasRealSelectedFile || isAnalyzing ? 0.6 : 1,
+                          }}
+                        >
+                          <MaterialIcon className="text-sm">
+                            {isAnalyzing ? "hourglass_top" : "analytics"}
+                          </MaterialIcon>
+                          {isAnalyzing ? "분석 중..." : "AI 이미지 판독"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
+          </section>
 
-            {hasStoredFileInfo && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
-                <InfoCard
-                  label="파일 이름"
-                  value={savedFileInfo.name || "알 수 없음"}
-                  breakAll
-                />
-                <InfoCard
-                  label="파일 확장자"
-                  value={savedFileInfo.type || "알 수 없음"}
-                />
-                <InfoCard
-                  label="파일 용량"
-                  value={savedFileInfo.size || "알 수 없음"}
-                />
-              </div>
-            )}
-
-            {!hasRealSelectedFile && hasPreview && (
-              <p
-                className="text-sm mt-4"
-                style={{
-                  color: isDarkMode
-                    ? "rgba(255,255,255,0.72)"
-                    : COLORS.onSurfaceVariant,
-                }}
-              >
-                새로고침 후에는 보안상 원본 파일이 유지되지 않습니다. 분석하려면
-                이미지를 다시 선택해주세요.
-              </p>
-            )}
-          </div>
-
-          <div
+          <section
             id="analysis-elements"
-            className="p-6 rounded-[1.5rem] border shadow-sm scroll-mt-24 transition-colors duration-300"
+            className="p-6 rounded-[1.5rem] border shadow-sm scroll-mt-24 transition-colors duration-300 self-start"
             style={{
               backgroundColor: COLORS.surfaceContainerLowest,
               borderColor: "rgba(193,199,203,0.1)",
@@ -443,7 +494,7 @@ export function UploadPage({
                 icon="biotech"
               />
             </div>
-          </div>
+          </section>
         </section>
       </div>
     </main>
