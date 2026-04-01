@@ -23,7 +23,7 @@ export const COLORS = {
   primaryFixed: "#c6e8f8",
   onTertiaryFixed: "#2f1400",
   onPrimaryFixedVariant: "#2b4b58",
-  background: "#f3faff",
+  background: "#ffffff",
   onSecondary: "#ffffff",
   secondaryFixed: "#8cf5e4",
   onTertiaryFixedVariant: "#6f3800",

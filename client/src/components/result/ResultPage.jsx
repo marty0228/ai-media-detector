@@ -5,7 +5,7 @@ import { InfoCard } from "../common/InfoCard";
 import { AnimatedFactorCard } from "./AnimatedFactorCard";
 import { generateResultPdf } from "../../utils/generateResultPdf";
 
-export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
+export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
   const reportRef = useRef(null);
 
   const sanitizeFileName = (name) => {
@@ -18,35 +18,25 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
   };
 
   const handleSaveReport = async () => {
-  try {
-    await generateResultPdf({
-      result,
-      fileInfo,
-      previewUrl,
-      sanitizeFileName,
-    });
-  } catch (error) {
-    console.error("PDF 생성 실패:", error);
-    alert(`PDF 생성 실패: ${error?.message || error}`);
-  }
-};
+    try {
+      await generateResultPdf({
+        result,
+        fileInfo,
+        previewUrl,
+        sanitizeFileName,
+      });
+    } catch (error) {
+      console.error("PDF 생성 실패:", error);
+      alert(`PDF 생성 실패: ${error?.message || error}`);
+    }
+  };
 
   return (
     <main
       ref={reportRef}
       data-report-export="true"
-      className="max-w-7xl mx-auto px-6 py-12"
+      className="max-w-7xl mx-auto px-6 pt-24 pb-12"
     >
-      <button
-        type="button"
-        onClick={onBack}
-        className="inline-flex items-center gap-2 text-sm font-semibold mb-8 hover:underline"
-        style={{ color: COLORS.primary }}
-      >
-        <MaterialIcon className="text-base">arrow_back</MaterialIcon>
-        업로드 페이지로 돌아가기
-      </button>
-
       <section className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
           <div className="max-w-2xl">
@@ -61,16 +51,24 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               <MaterialIcon className="text-sm">science</MaterialIcon>
               AI 검증 리포트
             </div>
+
             <h2
               className="text-4xl font-extrabold mb-2"
               style={{
-                color: COLORS.primary,
+                color: isDarkMode ? "#ffffff" : COLORS.primary,
                 fontFamily: "Manrope, sans-serif",
               }}
             >
               종합 분석 결과
             </h2>
-            <p style={{ color: COLORS.onSurfaceVariant }}>
+
+            <p
+              style={{
+                color: isDarkMode
+                  ? "rgba(255,255,255,0.82)"
+                  : COLORS.onSurfaceVariant,
+              }}
+            >
               {result.summary.description}
             </p>
           </div>
@@ -265,19 +263,6 @@ export function ResultPage({ result, fileInfo, previewUrl, onBack }) {
               >
                 <MaterialIcon className="text-base">download</MaterialIcon>
                 결과 저장하기
-              </button>
-              <button
-                className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.10)",
-                  color: COLORS.onPrimary,
-                  borderColor: "rgba(255,255,255,0.20)",
-                  letterSpacing: "0.14em",
-                }}
-                type="button"
-                onClick={onBack}
-              >
-                다른 이미지 검사하기
               </button>
             </div>
           </div>

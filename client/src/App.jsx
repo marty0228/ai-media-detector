@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { COLORS } from "./constants/colors";
 import { STORAGE_KEYS } from "./constants/storageKeys";
 import { useExternalFonts } from "./hooks/useExternalFonts";
@@ -10,6 +10,8 @@ import { ResultPage } from "./components/result/ResultPage";
 
 export default function App() {
   useExternalFonts();
+
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const {
     page,
@@ -26,29 +28,46 @@ export default function App() {
     handleBack,
   } = useAnalysisState();
 
+  const handleLogoClick = () => {
+    if (page === "result") {
+      handleBack();
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   return (
     <div
-      className="min-h-screen"
+      className="min-h-screen transition-colors duration-300"
       style={{
-        backgroundColor: COLORS.background,
-        color: COLORS.onSurface,
+        backgroundColor: isDarkMode ? "#000000" : "#ffffff",
+        color: isDarkMode ? "#ffffff" : COLORS.onSurface,
         fontFamily: "Inter, sans-serif",
       }}
     >
       <style>{`
+        html {
+          scroll-behavior: smooth;
+        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
         body {
           margin: 0;
-          background: ${COLORS.background};
+          background: ${isDarkMode ? "#000000" : "#ffffff"};
         }
         * {
           box-sizing: border-box;
         }
       `}</style>
 
-      <Header />
+      <Header
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
+        onLogoClick={handleLogoClick}
+        showNav={page === "upload"}
+        forceSolid={page === "result"}
+      />
 
       {page === "upload" ? (
         <UploadPage
@@ -61,6 +80,7 @@ export default function App() {
           onClearFile={handleClearSelectedFile}
           onAnalyze={handleAnalyze}
           setDragActive={setDragActive}
+          isDarkMode={isDarkMode}
         />
       ) : (
         <ResultPage
@@ -69,7 +89,7 @@ export default function App() {
           previewUrl={
             previewDataUrl || localStorage.getItem(STORAGE_KEYS.preview) || ""
           }
-          onBack={handleBack}
+          isDarkMode={isDarkMode}
         />
       )}
 
