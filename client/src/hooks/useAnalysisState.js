@@ -142,7 +142,7 @@ export function useAnalysisState() {
         "메타데이터 분석": "Meta Data",
         "외부 검색 검증": "external_search",
         "시각적 이상 분석": "visual_anomaly",
-        "포렌식 패턴 분석": "Model 5",
+        "포렌식 패턴 분석": "forensic_analysis",
       };
 
       const updatedFactors = defaultResult.factors.map((factor) => {

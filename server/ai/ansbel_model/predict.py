@@ -34,7 +34,7 @@ def predict(individual_results: list) -> dict:
         "Water Mark": 0,
         "Meta Data": 1,
         "external_search": 2,
-        "Model 5": 3,
+        "forensic_analysis": 3,
         "visual_anomaly": 4
     }
     

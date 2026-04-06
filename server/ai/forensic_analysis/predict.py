@@ -60,7 +60,7 @@ def predict(image_bytes: bytes) -> dict:
         if _model is None:
             # 가중치(웨이트)가 없어서 모델 초기화가 안 되었다면 기본(평균적인 중립) 결과 스킵 처리
             return {
-                "model_name": "Model 5",
+                "model_name": "forensic_analysis",
                 "predicted_idx": 1,
                 "confidence": 0.5,
                 "error": "trufor.pth.tar weight file is missing."
@@ -90,7 +90,7 @@ def predict(image_bytes: bytes) -> dict:
             predicted_idx = 1 if det_prob >= 0.5 else 0
             
             return {
-                "model_name": "Model 5",
+                "model_name": "forensic_analysis",
                 "predicted_idx": predicted_idx,
                 "confidence": round(det_prob, 4),
             }
@@ -98,7 +98,7 @@ def predict(image_bytes: bytes) -> dict:
     except Exception as e:
         print(f"Forensic Analysis prediction error: {e}")
         return {
-            "model_name": "Model 5",
+            "model_name": "forensic_analysis",
             "predicted_idx": 0,
             "confidence": 0.5,
             "error": str(e)
