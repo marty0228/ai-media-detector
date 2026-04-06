@@ -8,7 +8,7 @@ if __name__ == '__main__':
   # data.yaml에는 데이터셋 경로와 클래스 정보(0: watermark)가 들어있어야 합니다.
   model.train(
     data='./datasets/data.yaml', 
-    epochs=50, 
+    epochs=1, 
     imgsz=640, 
     device=0,
     project='watermark_model',
