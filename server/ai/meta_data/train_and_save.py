@@ -30,7 +30,14 @@ X = X.astype({c: int for c in X.columns if X[c].dtype == 'bool'})
 # ---------------------------------------------------------
 X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-model = RandomForestClassifier(n_estimators=300, max_depth=10, min_samples_split=4, min_samples_leaf=2, random_state=42, class_weight='balanced')
+model = RandomForestClassifier(
+  n_estimators=300, 
+  max_depth=10, 
+  min_samples_split=4, 
+  min_samples_leaf=2, 
+  random_state=42, 
+  class_weight='balanced'
+  )
 model.fit(X_train, y_train)
 
 # ---------------------------------------------------------
