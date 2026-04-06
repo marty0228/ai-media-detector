@@ -17,17 +17,32 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
       .slice(0, 60);
   };
 
-  const handleSaveReport = async () => {
+
+  const handlePreviewReport = async () => {
+    // 팝업 차단을 방지하기 위해 동기 타이밍에 새 창 오픈
+    const newWindow = window.open("", "_blank");
+    if (newWindow) {
+      newWindow.document.write("<html><body style='display:flex;justify-content:center;align-items:center;height:100vh;background:#f8fafc;font-family:sans-serif;'><h2>Loading PDF Preview...</h2></body></html>");
+    }
+    
     try {
-      await generateResultPdf({
+      const pdfUrl = await generateResultPdf({
         result,
         fileInfo,
         previewUrl,
         sanitizeFileName,
+        previewMode: true,
       });
+      
+      if (newWindow) {
+        newWindow.location.href = pdfUrl;
+      } else {
+        window.open(pdfUrl, "_blank");
+      }
     } catch (error) {
-      console.error("PDF 생성 실패:", error);
-      alert(`PDF 생성 실패: ${error?.message || error}`);
+      if (newWindow) newWindow.close();
+      console.error("PDF 미리보기 실패:", error);
+      alert(`PDF 미리보기 실패: ${error?.message || error}`);
     }
   };
 
@@ -63,6 +78,7 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
             </h2>
 
             <p
+              className="mb-8"
               style={{
                 color: isDarkMode
                   ? "rgba(255,255,255,0.82)"
@@ -71,6 +87,22 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
             >
               {result.summary.description}
             </p>
+            <div>
+              <button
+                className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase inline-flex items-center gap-2 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-out"
+                style={{
+                  backgroundColor: isDarkMode ? "rgba(255,255,255,0.08)" : COLORS.surfaceContainerLowest,
+                  color: isDarkMode ? "#ffffff" : COLORS.primary,
+                  border: isDarkMode ? "1px solid rgba(255,255,255,0.16)" : "1px solid rgba(193,199,203,0.3)",
+                  letterSpacing: "0.14em",
+                }}
+                type="button"
+                onClick={handlePreviewReport}
+              >
+                <MaterialIcon className="text-base">picture_as_pdf</MaterialIcon>
+                개요 보기
+              </button>
+            </div>
           </div>
 
           <div
@@ -213,110 +245,6 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
         </div>
       </section>
 
-      <section className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div
-          className="md:col-span-2 text-white p-10 rounded-[1.5rem] relative overflow-hidden flex flex-col justify-end min-h-[360px]"
-          style={{ backgroundColor: COLORS.primaryContainer }}
-        >
-          <div
-            className="absolute top-0 right-0 w-64 h-64 opacity-20 blur-3xl -mr-20 -mt-20"
-            style={{ backgroundColor: COLORS.secondary }}
-          />
-
-          <div className="relative z-10">
-            <h3
-              className="text-3xl font-bold mb-4"
-              style={{ fontFamily: "Manrope, sans-serif" }}
-            >
-              {result.notes.heroTitle}
-            </h3>
-            <p
-              className="text-lg mb-8 max-w-2xl"
-              style={{ color: COLORS.onPrimaryContainer }}
-            >
-              {result.notes.heroText}
-            </p>
-
-            <div className="flex gap-4 z-10 flex-wrap">
-              <button
-                className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase"
-                style={{
-                  backgroundColor: COLORS.surfaceContainerLowest,
-                  color: COLORS.primary,
-                  letterSpacing: "0.14em",
-                }}
-                type="button"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              >
-                결과 개요 보기
-              </button>
-              <button
-                className="px-6 py-3 font-bold rounded-[1rem] text-sm uppercase border inline-flex items-center gap-2"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.16)",
-                  color: COLORS.onPrimary,
-                  borderColor: "rgba(255,255,255,0.25)",
-                  letterSpacing: "0.14em",
-                }}
-                type="button"
-                onClick={handleSaveReport}
-              >
-                <MaterialIcon className="text-base">download</MaterialIcon>
-                결과 저장하기
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div
-          className="p-8 rounded-[1.5rem] flex flex-col justify-between"
-          style={{ backgroundColor: COLORS.surfaceContainerHigh }}
-        >
-          <div>
-            <MaterialIcon
-              className="text-4xl mb-6"
-              style={{ color: COLORS.primary }}
-            >
-              hub
-            </MaterialIcon>
-            <h4
-              className="text-xl font-bold mb-2"
-              style={{
-                color: COLORS.primary,
-                fontFamily: "Manrope, sans-serif",
-              }}
-            >
-              {result.notes.sideTitle}
-            </h4>
-            <p
-              className="text-sm break-keep"
-              style={{ color: COLORS.onSurfaceVariant }}
-            >
-              추후 백엔드로부터 전달받는 시스템 메타데이터 및 연결 상태를
-              표기하는 공간입니다.
-            </p>
-          </div>
-          <div className="mt-8 flex flex-col gap-3">
-            {result.notes.sideItems.map((item, index) => (
-              <div
-                key={`${item.label}-${index}`}
-                className="flex items-center justify-between text-xs py-2"
-                style={{
-                  borderBottom:
-                    index !== result.notes.sideItems.length - 1
-                      ? `1px solid rgba(193,199,203,0.2)`
-                      : "none",
-                }}
-              >
-                <span style={{ color: COLORS.outline }}>{item.label}</span>
-                <span className="font-bold" style={{ color: COLORS.primary }}>
-                  {item.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

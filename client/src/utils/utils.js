@@ -49,9 +49,9 @@ export async function createOptimizedPreview(file) {
 }
 
 export function getScoreColor(score) {
-  if (score >= 70) return "#006a60";
+  if (score >= 70) return "#ba1a1a";
   if (score >= 40) return "#ffb780";
-  return "#ba1a1a";
+  return "#006a60";
 }
 
 export function easeOutCubic(t) {

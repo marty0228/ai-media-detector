@@ -102,40 +102,6 @@ export function AnimatedFactorCard({ factor, index }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <InfoCard
-          label={factor.metrics[0].label}
-          value={factor.metrics[0].value}
-        />
-        <InfoCard
-          label={factor.metrics[1].label}
-          value={factor.metrics[1].value}
-        />
-      </div>
-
-      <div className="mb-8">
-        <div
-          className="flex justify-between text-[10px] font-bold uppercase mb-2"
-          style={{ color: COLORS.outline }}
-        >
-          <span>{factor.progressLabel}</span>
-          <span>{factor.progressValue}</span>
-        </div>
-        <div
-          className="w-full h-2 rounded-full overflow-hidden"
-          style={{ backgroundColor: COLORS.surfaceContainer }}
-        >
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${displayScore}%`,
-              backgroundColor: displayColor,
-              transition: "background-color 0.12s linear",
-            }}
-          />
-        </div>
-      </div>
-
       <p
         className="text-sm mt-auto pt-6 leading-relaxed"
         style={{ color: COLORS.onSurfaceVariant }}

@@ -604,7 +604,7 @@ export function UploadPage({
                 <FactorRow
                   isDarkMode={isDarkMode}
                   badge="Provenance"
-                  title="출처 검증"
+                  title="워터마크 분석"
                   subtitle="사진의 원본 출처와 생성 이력, 유통 경로를 바탕으로 신뢰 가능한 원본 이미지인지 검토합니다."
                   icon="shield_lock"
                 />

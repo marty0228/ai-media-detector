@@ -138,7 +138,7 @@ export function useAnalysisState() {
       const parsedConfidence = parseFloat(finalPred.confidence);
 
       const modelMapping = {
-        "출처 검증": "Water Mark",
+        "워터마크 분석": "Water Mark",
         "메타데이터 분석": "Meta Data",
         "외부 검색 검증": "external_search",
         "시각적 이상 분석": "visual_anomaly",

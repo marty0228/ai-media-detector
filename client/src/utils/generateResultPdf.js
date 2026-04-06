@@ -1,4 +1,4 @@
-﻿import { jsPDF } from "jspdf";
+import { jsPDF } from "jspdf";
 
 const FONT_FAMILY = "NanumGothic";
 const REGULAR_FONT_FILE = "NanumGothic.ttf";
@@ -222,6 +222,7 @@ export async function generateResultPdf({
   fileInfo,
   previewUrl,
   sanitizeFileName,
+  previewMode = false,
 }) {
   const timestamp = new Date();
   const fileBase = sanitizeFileName(fileInfo?.name);
@@ -498,5 +499,10 @@ export async function generateResultPdf({
     footerY,
   );
 
-  doc.save(filename);
+  if (previewMode) {
+    return doc.output("bloburl");
+  } else {
+    doc.save(filename);
+  }
 }
+
