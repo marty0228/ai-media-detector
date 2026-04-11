@@ -1,8 +1,15 @@
 import os, joblib
 import pandas as pd
+import mlflow
+import mlflow.sklearn
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# 배포된 Cloud Run 주소 설정
+MLFLOW_TRACKING_URI = "https://mlflow-server-7852824563.asia-northeast3.run.app"
+mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+mlflow.set_experiment("AI_Media_Detector_MetaData")
 
 # ---------------------------------------------------------
 # 1. 학습을 위한 데이터 로딩 및 결측치 전처리
@@ -30,31 +37,56 @@ X = X.astype({c: int for c in X.columns if X[c].dtype == 'bool'})
 # ---------------------------------------------------------
 X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-model = RandomForestClassifier(
-  n_estimators=300, 
-  max_depth=10, 
-  min_samples_split=4, 
-  min_samples_leaf=2, 
-  random_state=42, 
-  class_weight='balanced'
-  )
-model.fit(X_train, y_train)
+with mlflow.start_run():
+    n_estimators = 300
+    max_depth = 10
+    min_samples_split = 4
+    min_samples_leaf = 2
+    
+    # 실험 내용 및 하이퍼파라미터 기록
+    mlflow.log_params({
+        "model_type": "RandomForest",
+        "n_estimators": n_estimators,
+        "max_depth": max_depth,
+        "min_samples_split": min_samples_split,
+        "min_samples_leaf": min_samples_leaf,
+        "random_state": 42,
+        "class_weight": "balanced"
+    })
 
-# ---------------------------------------------------------
-# 4. 검증 성능 리포팅 및 중요 피처(Importance) 추출 구조
-# ---------------------------------------------------------
-y_pred = model.predict(X_valid)
-print(f"\n검증 Accuracy: {accuracy_score(y_valid, y_pred):.4f}\n\nConfusion Matrix:\n{confusion_matrix(y_valid, y_pred)}\n\nClassification Report:\n{classification_report(y_valid, y_pred, digits=4)}")
+    model = RandomForestClassifier(
+      n_estimators=n_estimators, 
+      max_depth=max_depth, 
+      min_samples_split=min_samples_split, 
+      min_samples_leaf=min_samples_leaf, 
+      random_state=42, 
+      class_weight='balanced'
+      )
+    model.fit(X_train, y_train)
 
-feat_df = pd.DataFrame({'feature': X_train.columns, 'importance': model.feature_importances_}).sort_values(by='importance', ascending=False)
-feat_csv = os.path.join(base_dir, 'model', 'feature_importance.csv')
-feat_df.to_csv(feat_csv, index=False, encoding='utf-8-sig')
+    # ---------------------------------------------------------
+    # 4. 검증 성능 리포팅 및 중요 피처(Importance) 추출 구조
+    # ---------------------------------------------------------
+    y_pred = model.predict(X_valid)
+    acc = accuracy_score(y_valid, y_pred)
+    
+    # 평가 지표 기록
+    mlflow.log_metric("accuracy", acc)
+    
+    print(f"\n검증 Accuracy: {acc:.4f}\n\nConfusion Matrix:\n{confusion_matrix(y_valid, y_pred)}\n\nClassification Report:\n{classification_report(y_valid, y_pred, digits=4)}")
 
-# ---------------------------------------------------------
-# 5. 최종 완성 모델 직렬화 및 구조 저장 내보내기 (.pkl)
-# ---------------------------------------------------------
-model_path, cols_path = os.path.join(base_dir, 'model', 'rf_metadata_model.pkl'), os.path.join(base_dir, 'model', 'model_columns.pkl')
-joblib.dump(model, model_path)
-joblib.dump(X_train.columns.tolist(), cols_path)
+    feat_df = pd.DataFrame({'feature': X_train.columns, 'importance': model.feature_importances_}).sort_values(by='importance', ascending=False)
+    feat_csv = os.path.join(base_dir, 'model', 'feature_importance.csv')
+    feat_df.to_csv(feat_csv, index=False, encoding='utf-8-sig')
 
-print(f"\n학습 완료\n- 모델: {model_path}\n- 컬럼: {cols_path}\n- 중요도: {feat_csv}")
+    # ---------------------------------------------------------
+    # 5. 최종 완성 모델 직렬화 및 구조 저장 내보내기 (.pkl)
+    # ---------------------------------------------------------
+    model_path, cols_path = os.path.join(base_dir, 'model', 'rf_metadata_model.pkl'), os.path.join(base_dir, 'model', 'model_columns.pkl')
+    joblib.dump(model, model_path)
+    joblib.dump(X_train.columns.tolist(), cols_path)
+    
+    # 모델 저장 (자동으로 GCS 버킷에 업로드됨)
+    mlflow.sklearn.log_model(model, "rf_model")
+
+    print(f"\n학습 완료\n- 모델: {model_path}\n- 컬럼: {cols_path}\n- 중요도: {feat_csv}")

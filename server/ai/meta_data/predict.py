@@ -1,5 +1,9 @@
 import os, joblib
 import pandas as pd
+import mlflow
+import mlflow.sklearn
+
+MLFLOW_TRACKING_URI = "https://mlflow-server-7852824563.asia-northeast3.run.app"
 
 try:
     from ai.meta_data.fetch_metadata import extract_metadata
@@ -18,9 +22,28 @@ def load_model():
     base_path = os.path.dirname(os.path.abspath(__file__))
     m_path, c_path = os.path.join(base_path, 'model', 'rf_metadata_model.pkl'), os.path.join(base_path, 'model', 'model_columns.pkl')
     
+    if os.path.exists(c_path):
+        trained_columns = joblib.load(c_path)
+        
+    try:
+        # 클라우드 런 MLflow에서 최신 모델 불러오기 시도
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        mlflow.set_experiment("AI_Media_Detector_MetaData")
+        experiment = mlflow.get_experiment_by_name("AI_Media_Detector_MetaData")
+        if experiment:
+            client = mlflow.tracking.MlflowClient()
+            runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["start_time DESC"], max_results=1)
+            if runs:
+                latest_run_id = runs[0].info.run_id
+                model = mlflow.sklearn.load_model(f"runs:/{latest_run_id}/rf_model")
+                print("Meta Data AI model loaded successfully from MLflow (Cloud Run).")
+                return
+    except Exception as e:
+        print(f"Warning: Failed to load model from MLflow Cloud Run ({e}). Falling back to local pickle.")
+
     if os.path.exists(m_path) and os.path.exists(c_path):
         model, trained_columns = joblib.load(m_path), joblib.load(c_path)
-        print("Meta Data AI model loaded successfully.")
+        print("Meta Data AI model loaded successfully from local pickle.")
     else:
         print("Warning: Meta Data model files not found.")
 
