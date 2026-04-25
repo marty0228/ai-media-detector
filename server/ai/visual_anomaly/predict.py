@@ -4,9 +4,16 @@ from io import BytesIO
 import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
+import mlflow
+import mlflow.pytorch
 
 # model.py 와 같은 모듈 공간에서 불러옴
-from ai.visual_anomaly.model import VisualAnomalyResNet
+try:
+    from ai.visual_anomaly.model import VisualAnomalyResNet
+except ModuleNotFoundError:
+    from model import VisualAnomalyResNet
+
+MLFLOW_TRACKING_URI = "https://mlflow-server-7852824563.asia-northeast3.run.app"
 
 # 글로벌 변수로 모델 캐싱
 _model = None
@@ -23,25 +30,43 @@ def load_model():
     
     _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # 모델 아키텍처 불러오기
-    _model = VisualAnomalyResNet(pretrained=False) # 추론 시엔 Imagenet weight 다운로드 불필요
-    
-    weight_path = os.path.join(os.path.dirname(__file__), "visual_anomaly.pth")
-    if os.path.exists(weight_path):
-        _model.load_state_dict(torch.load(weight_path, map_location=_device))
-        print("-> PyTorch weights loaded successfully.")
-    else:
-        print(f"-> WARNING: Weight file not found at {weight_path}. Model will output random values.")
-        
-    _model = _model.to(_device)
-    _model.eval()
-
     # ImageNet 정규화 표준
     _transforms = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+    
+    try:
+        # 클라우드 런 MLflow에서 최신 모델 불러오기 시도
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        mlflow.set_experiment("AI_Media_Detector_Visual_Anomaly")
+        experiment = mlflow.get_experiment_by_name("AI_Media_Detector_Visual_Anomaly")
+        if experiment:
+            client = mlflow.tracking.MlflowClient()
+            runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["start_time DESC"], max_results=1)
+            if runs:
+                latest_run_id = runs[0].info.run_id
+                _model = mlflow.pytorch.load_model(f"runs:/{latest_run_id}/resnet_model")
+                _model = _model.to(_device)
+                _model.eval()
+                print("visual_anomaly model loaded successfully from MLflow (Cloud Run).")
+                return
+    except Exception as e:
+        print(f"Warning: Failed to load model from MLflow Cloud Run ({e}). Falling back to local weight.")
+
+    # 모델 아키텍처 불러오기
+    _model = VisualAnomalyResNet(pretrained=False) # 추론 시엔 Imagenet weight 다운로드 불필요
+    
+    weight_path = os.path.join(os.path.dirname(__file__), "visual_anomaly.pth")
+    if os.path.exists(weight_path):
+        _model.load_state_dict(torch.load(weight_path, map_location=_device))
+        print("-> PyTorch weights loaded successfully from local.")
+    else:
+        print(f"-> WARNING: Weight file not found at {weight_path}. Model will output random values.")
+        
+    _model = _model.to(_device)
+    _model.eval()
 
 
 def predict(image_bytes: bytes) -> dict:
