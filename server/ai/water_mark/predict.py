@@ -14,14 +14,14 @@ model = None
 # ---------------------------------------------------------
 def load_model():
     global model
-    print("Loading Watermark AI model (Model 2)...")
+    print("Loading Watermark AI model (Gemini fine-tuned)...")
     base_path = os.path.dirname(os.path.abspath(__file__))
-    weights_path = os.path.join(base_path, 'runs', 'detect', 'watermark_model', 'final_v1', 'weights', 'best.pt')
+    weights_path = os.path.join(base_path, 'runs', 'detect', 'finetune_gemini_v1', 'weights', 'best.pt')
     
     if YOLO and os.path.exists(weights_path):
         # 저장된 YOLO 모델(Watermark 판별용) 가중치 로드
         model = YOLO(weights_path)
-        print("Watermark model (Model 2) loaded successfully.")
+        print("Watermark model (Gemini fine-tuned) loaded successfully.")
     else:
         print(f"Warning: Watermark model files not found at {weights_path} or ultralytics not installed.")
 
@@ -62,7 +62,7 @@ def predict(image_bytes: bytes) -> dict:
     except Exception as e:
         print(f"Error in watermark prediction: {e}")
         return {
-            "model_name": "Model 2",
+            "model_name": "Water Mark",
             "predicted_idx": 0,
             "confidence": 0.0
         }
