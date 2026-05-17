@@ -76,7 +76,7 @@ def predict(image_bytes: bytes) -> dict:
     # 모델 로드 실패 시 더미 데이터 반환
     if ai_detector is None:
         return {
-            "model_name": "AI Image Detector",
+            "model_name": "Visual anomaly",
             "predicted_idx": 0,
             "confidence": 0.0
         }

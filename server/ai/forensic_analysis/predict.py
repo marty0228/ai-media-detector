@@ -52,9 +52,6 @@ def load_model():
 def predict(image_bytes: bytes) -> dict:
     """Bytes 이미지를 TruFor 모델에 통과시켜 조작 확률(confidence)을 산출하여 반환합니다."""
     global _model, _device
-    
-    if _model is None:
-        load_model()
         
     try:
         if _model is None:

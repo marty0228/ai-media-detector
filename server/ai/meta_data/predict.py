@@ -64,28 +64,6 @@ def load_model():
 
     print("Loading Meta Data AI model...")
     base_path = os.path.dirname(os.path.abspath(__file__))
-<<<<<<< HEAD
-    m_path, c_path = os.path.join(base_path, 'model', 'rf_metadata_model.pkl'), os.path.join(base_path, 'model', 'model_columns.pkl')
-    
-    # 먼저 로컬 컬럼 파일을 로드 시도 (구버전 호환용)
-    if os.path.exists(c_path):
-        trained_columns = joblib.load(c_path)
-        
-    try:
-        # 클라우드 런 MLflow에서 최신 모델 불러오기 시도
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        mlflow.set_experiment("AI_Media_Detector_MetaData")
-        experiment = mlflow.get_experiment_by_name("AI_Media_Detector_MetaData")
-        if experiment:
-            client = mlflow.tracking.MlflowClient()
-            runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["start_time DESC"], max_results=1)
-            if runs:
-                latest_run_id = runs[0].info.run_id
-                model = mlflow.sklearn.load_model(f"runs:/{latest_run_id}/rf_model")
-                if hasattr(model, "feature_names_in_"):
-                    trained_columns = list(model.feature_names_in_)
-                print("Meta Data AI model loaded successfully from MLflow (Cloud Run).")
-=======
     model_path = os.path.join(base_path, "model", "rf_metadata_model.pkl")
     columns_path = os.path.join(base_path, "model", "model_columns.pkl")
 
@@ -93,25 +71,12 @@ def load_model():
         try:
             # Keep the model and feature columns in sync by loading both from one run.
             if _load_mlflow_model():
->>>>>>> 9e2ab0cc539db0ee00292c36cfeb605218efb70f
                 return
         except Exception as e:
             print(f"Warning: Failed to load model from MLflow Cloud Run ({e}). Falling back to local pickle.")
 
     _load_local_model(model_path, columns_path)
 
-<<<<<<< HEAD
-    if os.path.exists(m_path):
-        model = joblib.load(m_path)
-        if hasattr(model, "feature_names_in_"):
-            trained_columns = list(model.feature_names_in_)
-        elif os.path.exists(c_path):
-            trained_columns = joblib.load(c_path)
-        print("Meta Data AI model loaded successfully from local pickle.")
-    else:
-        print("Warning: Meta Data model files not found.")
-=======
->>>>>>> 9e2ab0cc539db0ee00292c36cfeb605218efb70f
 
 def predict(image_bytes: bytes) -> dict:
     global model, trained_columns

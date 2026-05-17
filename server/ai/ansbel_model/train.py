@@ -3,63 +3,227 @@ import joblib
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-# ── 설정 변수 ──
-DATA_FILE = os.path.join(os.path.dirname(__file__), "dataset.txt")
-MODEL_SAVE_PATH = os.path.join(os.path.dirname(__file__), "ensemble_model.pkl")
+from ai.water_mark.predict import predict as predict_water_mark
+from ai.meta_data.predict import predict as predict_meta_data
+from ai.external_search.predict import predict as predict_external_search
+from ai.forensic_analysis.predict import predict as predict_forensic_analysis
+from ai.visual_anomaly.predict import predict as predict_visual_anomaly
+
+from ai.water_mark.predict import load_model as load_water_mark
+from ai.meta_data.predict import load_model as load_meta_data
+from ai.external_search.predict import load_model as laod_external_search
+from ai.forensic_analysis.predict import load_model as load_forensic_analysis
+from ai.visual_anomaly.predict import load_model as load_visual_anomaly
+
+
+from ai.ansbel_model.predict import build_feature_vector, FEATURE_ORDER
+
+
+BASE_DIR = os.path.dirname(__file__)
+
+AI_DATA_DIR = os.path.join(BASE_DIR, "data", "ai")
+REAL_DATA_DIR = os.path.join(BASE_DIR, "data", "real")
+
+MODEL_SAVE_PATH = os.path.join(BASE_DIR, "ensemble_model.pkl")
+
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
+
+
+def is_image_file(filename):
+    ext = os.path.splitext(filename)[1].lower()
+    return ext in IMAGE_EXTENSIONS
+
+
+def read_image_bytes(image_path):
+    with open(image_path, "rb") as f:
+        return f.read()
+
+
+def collect_image_paths(directory, label):
+    samples = []
+
+    if not os.path.exists(directory):
+        print(f"[경고] 폴더가 없습니다: {directory}")
+        return samples
+
+    for filename in os.listdir(directory):
+        if not is_image_file(filename):
+            continue
+
+        image_path = os.path.join(directory, filename)
+        samples.append((image_path, label))
+
+    return samples
+
+
+def safe_run_predict(predict_func, image_bytes, model_name):
+    """
+    개별 모델 predict가 실패해도 학습 전체가 멈추지 않도록 처리.
+    """
+
+    try:
+        result = predict_func(image_bytes)
+
+        if isinstance(result, dict):
+            result["model_name"] = result.get("model_name", model_name)
+            return result
+
+        return {
+            "model_name": model_name,
+            "predicted_idx": 0,
+            "confidence": result,
+        }
+
+    except Exception as e:
+        print(f"    [경고] {model_name} 예측 실패: {e}")
+
+        return {
+            "model_name": model_name,
+            "predicted_idx": 0,
+            "confidence": 0.0,
+            "error": str(e),
+        }
+
+
+def predict_individual_models(image_bytes):
+    """
+    이미지 bytes를 받아 5개 하위 모델의 결과 리스트를 생성한다.
+    이 결과 리스트는 ansbel_model.predict의 build_feature_vector()에 들어간다.
+    """
+
+    individual_results = [
+        safe_run_predict(
+            predict_water_mark,
+            image_bytes,
+            "Water Mark",
+        ),
+        safe_run_predict(
+            predict_meta_data,
+            image_bytes,
+            "Meta Data",
+        ),
+        safe_run_predict(
+            predict_external_search,
+            image_bytes,
+            "external_search",
+        ),
+        safe_run_predict(
+            predict_forensic_analysis,
+            image_bytes,
+            "forensic_analysis",
+        ),
+        safe_run_predict(
+            predict_visual_anomaly,
+            image_bytes,
+            "Visual anomaly",
+        ),
+    ]
+
+    return individual_results
+
+
+def build_training_dataset():
+    samples = []
+
+    samples.extend(collect_image_paths(AI_DATA_DIR, label=1))
+    samples.extend(collect_image_paths(REAL_DATA_DIR, label=0))
+
+    if not samples:
+        print("[오류] 학습할 이미지가 없습니다.")
+        print(f"AI 이미지 폴더: {AI_DATA_DIR}")
+        print(f"Real 이미지 폴더: {REAL_DATA_DIR}")
+        return None, None
+
+    ai_count = sum(1 for _, label in samples if label == 1)
+    real_count = sum(1 for _, label in samples if label == 0)
+
+    print("=== Dataset Info ===")
+    print(f"총 이미지 수: {len(samples)}")
+    print(f"AI 이미지 수: {ai_count}")
+    print(f"Real 이미지 수: {real_count}")
+    print(f"Feature order: {FEATURE_ORDER}")
+    print()
+
+    X = []
+    y = []
+
+    for index, (image_path, label) in enumerate(samples, start=1):
+        print(f"[{index}/{len(samples)}] 처리 중: {image_path}")
+
+        try:
+            image_bytes = read_image_bytes(image_path)
+
+            individual_results = predict_individual_models(image_bytes)
+            features = build_feature_vector(individual_results)
+
+            X.append(features)
+            y.append(label)
+
+            print(f"  features: {features}")
+            print(f"  label: {label}")
+
+        except Exception as e:
+            print(f"  [스킵] 이미지 처리 실패: {image_path}")
+            print(f"  reason: {e}")
+
+    if not X:
+        print("[오류] 모든 이미지 예측에 실패했습니다.")
+        return None, None
+
+    return np.array(X, dtype=float), np.array(y, dtype=int)
+
 
 def train_meta_model():
-    print("Checking for dataset.txt...")
-    if not os.path.exists(DATA_FILE):
-        print(f"Error: {DATA_FILE} 파일을 찾을 수 없습니다.")
-        print("훈련 데이터를 'dataset.txt'라는 이름으로 만들어주세요.")
-        print("형식 (공백 구분): 워터마크 메타데이터 외부검색 포렌식 시각적이상 라벨")
-        print("예시: 0.3 0.2 0.34 0.7 0.2 1")
+    
+    load_forensic_analysis()
+    load_meta_data()
+    load_visual_anomaly()
+    laod_external_search()
+    load_water_mark()
+    
+    X, y = build_training_dataset()
+
+    if X is None or y is None:
         return
 
-    print("Loading data...")
-    try:
-        # 데이터 로딩 (모든 값이 숫자로 이루어져 있다고 가정)
-        data = np.loadtxt(DATA_FILE)
-    except Exception as e:
-        print(f"Failed to load dataset: {e}")
-        return
+    unique_classes, counts = np.unique(y, return_counts=True)
+    class_distribution = dict(zip(unique_classes, counts))
 
-    # 1줄만 있을 경우 2차원 배열로 차원 맞춰주기
-    if len(data.shape) == 1:
-        data = data.reshape(1, -1)
+    print()
+    print("=== Training Data ===")
+    print(f"X shape: {X.shape}")
+    print(f"y shape: {y.shape}")
+    print(f"Class distribution: {class_distribution}")
 
-    # 6개의 컬럼이 아니면 오류
-    if data.shape[1] < 6:
-        print(f"Error: 데이터 형식이 잘못되었습니다. (기대 컬럼 6개, 현재 {data.shape[1]}개)")
-        return
-
-    # 피처(X) 5개와 타겟(y) 1개로 분리
-    X = data[:, :5]
-    y = data[:, 5]
-
-    print(f"Loaded {X.shape[0]} samples.")
-    print("Training Logistic Regression model...")
-
-    # 데이터 클래스 종류 확인 (AI=1, Real=0 두 종류가 다 있어야 함)
-    unique_classes = np.unique(y)
     if len(unique_classes) < 2:
-        print("\n[오류] 훈련을 진행할 수 없습니다!")
-        print(f"데이터셋에 오직 하나의 클래스({unique_classes[0]})만 존재합니다.")
-        print("로지스틱 회귀로 앙상블을 학습하려면 'AI(1)' 데이터와 '진짜(0)' 데이터가 최소 1개씩은 있어야 비교군(결정 경계)을 만들 수 있습니다.")
-        print("dataset.txt 파일의 마지막 줄에 라벨이 0인 데이터를 추가해 주세요.\n")
+        print()
+        print("[오류] 훈련을 진행할 수 없습니다.")
+        print(f"현재 데이터셋에는 클래스 {unique_classes[0]}만 존재합니다.")
+        print("data/ai와 data/real 폴더에 각각 최소 1개 이상의 이미지가 필요합니다.")
         return
 
-    # 두 클래스의 비율 차이를 보정하기 위해 class_weight='balanced' 설정
-    model = LogisticRegression(class_weight='balanced')
+    print()
+    print("Training Logistic Regression Meta-Model...")
+
+    model = LogisticRegression(
+        class_weight="balanced",
+        max_iter=1000,
+        random_state=42,
+    )
+
     model.fit(X, y)
 
+    print()
     print("--- Training completed ---")
-    print(f"Model coefficients (Weights): {model.coef_[0]}")
+    print(f"Feature order: {FEATURE_ORDER}")
+    print(f"Model coefficients: {model.coef_[0]}")
     print(f"Model intercept: {model.intercept_[0]}")
 
-    # 모델을 pkl 형태로 저장
     joblib.dump(model, MODEL_SAVE_PATH)
-    print(f"Model saved successfully to {MODEL_SAVE_PATH}")
+
+    print()
+    print(f"Model saved successfully to: {MODEL_SAVE_PATH}")
+
 
 if __name__ == "__main__":
     train_meta_model()
