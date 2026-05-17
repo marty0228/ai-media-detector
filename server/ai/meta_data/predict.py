@@ -22,6 +22,7 @@ def load_model():
     base_path = os.path.dirname(os.path.abspath(__file__))
     m_path, c_path = os.path.join(base_path, 'model', 'rf_metadata_model.pkl'), os.path.join(base_path, 'model', 'model_columns.pkl')
     
+    # 먼저 로컬 컬럼 파일을 로드 시도 (구버전 호환용)
     if os.path.exists(c_path):
         trained_columns = joblib.load(c_path)
         
@@ -36,13 +37,19 @@ def load_model():
             if runs:
                 latest_run_id = runs[0].info.run_id
                 model = mlflow.sklearn.load_model(f"runs:/{latest_run_id}/rf_model")
+                if hasattr(model, "feature_names_in_"):
+                    trained_columns = list(model.feature_names_in_)
                 print("Meta Data AI model loaded successfully from MLflow (Cloud Run).")
                 return
     except Exception as e:
         print(f"Warning: Failed to load model from MLflow Cloud Run ({e}). Falling back to local pickle.")
 
-    if os.path.exists(m_path) and os.path.exists(c_path):
-        model, trained_columns = joblib.load(m_path), joblib.load(c_path)
+    if os.path.exists(m_path):
+        model = joblib.load(m_path)
+        if hasattr(model, "feature_names_in_"):
+            trained_columns = list(model.feature_names_in_)
+        elif os.path.exists(c_path):
+            trained_columns = joblib.load(c_path)
         print("Meta Data AI model loaded successfully from local pickle.")
     else:
         print("Warning: Meta Data model files not found.")

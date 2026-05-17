@@ -1,114 +1,122 @@
 import os
-import torch
-from io import BytesIO
-import torch.nn.functional as F
+import io
+import sys
+import tempfile
+from pathlib import Path
+
 from PIL import Image
-from torchvision import transforms
-import mlflow
-import mlflow.pytorch
 
-# model.py 와 같은 모듈 공간에서 불러옴
 try:
-    from ai.visual_anomaly.model import VisualAnomalyResNet
-except ModuleNotFoundError:
-    from model import VisualAnomalyResNet
+    from huggingface_hub import snapshot_download
+except ImportError:
+    snapshot_download = None
 
-MLFLOW_TRACKING_URI = "https://mlflow-server-7852824563.asia-northeast3.run.app"
 
-# 글로벌 변수로 모델 캐싱
-_model = None
-_device = None
-_transforms = None
+ai_detector = None
 
+
+# ---------------------------------------------------------
+# 1. 모델 초기화 및 로드
+# ---------------------------------------------------------
 def load_model():
-    """
-    서버 시작 시 호출되어 PyTorch 시각적 이상 평가 모델 세팅
-    """
-    global _model, _device, _transforms
-    
-    print("Loading visual_anomaly model (ResNet50)...")
-    
-    _device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # ImageNet 정규화 표준
-    _transforms = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-    ])
-    
+    global ai_detector
+
+    print("Loading Visual anomaly AI model...")
+
     try:
-        # 클라우드 런 MLflow에서 최신 모델 불러오기 시도
-        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-        mlflow.set_experiment("AI_Media_Detector_Visual_Anomaly")
-        experiment = mlflow.get_experiment_by_name("AI_Media_Detector_Visual_Anomaly")
-        if experiment:
-            client = mlflow.tracking.MlflowClient()
-            runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["start_time DESC"], max_results=1)
-            if runs:
-                latest_run_id = runs[0].info.run_id
-                _model = mlflow.pytorch.load_model(f"runs:/{latest_run_id}/resnet_model")
-                _model = _model.to(_device)
-                _model.eval()
-                print("visual_anomaly model loaded successfully from MLflow (Cloud Run).")
-                return
-    except Exception as e:
-        print(f"Warning: Failed to load model from MLflow Cloud Run ({e}). Falling back to local weight.")
-
-    # 모델 아키텍처 불러오기
-    _model = VisualAnomalyResNet(pretrained=False) # 추론 시엔 Imagenet weight 다운로드 불필요
-    
-    weight_path = os.path.join(os.path.dirname(__file__), "visual_anomaly.pth")
-    if os.path.exists(weight_path):
-        _model.load_state_dict(torch.load(weight_path, map_location=_device))
-        print("-> PyTorch weights loaded successfully from local.")
-    else:
-        print(f"-> WARNING: Weight file not found at {weight_path}. Model will output random values.")
+        repo_id = "Bombek1/ai-image-detector-siglip-dinov2"
         
-    _model = _model.to(_device)
-    _model.eval()
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        local_model_dir = os.path.join(
+            base_path,
+            "models",
+            "ai_detector_siglip_dinov2"
+        )
+
+        # Hugging Face에서 모델 파일 다운로드
+        # 이미 다운로드되어 있으면 로컬 파일을 재사용함
+        model_dir = snapshot_download(
+            repo_id=repo_id,
+            local_dir=local_model_dir
+        )
+
+        # Hugging Face repo 안의 model.py import를 위해 경로 추가
+        if model_dir not in sys.path:
+            sys.path.insert(0, model_dir)
+
+        try:
+            from model import AIImageDetector
+        except ImportError as e:
+            print(f"Warning: Failed to import AIImageDetector from model.py: {e}")
+            ai_detector = None
+            return
+
+        weights_path = os.path.join(model_dir, "pytorch_model.pt")
+
+        if not os.path.exists(weights_path):
+            print(f"Warning: AI detector weights not found at {weights_path}")
+            ai_detector = None
+            return
+
+        ai_detector = AIImageDetector(weights_path)
+
+        print("AI Image Detector model loaded successfully.")
+
+    except Exception as e:
+        print(f"Error while loading AI Image Detector model: {e}")
+        ai_detector = None
 
 
+# ---------------------------------------------------------
+# 2. 이미지 바이트 기반 AI 생성물 예측 실행
+# ---------------------------------------------------------
 def predict(image_bytes: bytes) -> dict:
-    """
-    Transfer Learning 된 모델로부터 AI 생성 확률을 반환합니다.
-    """
-    global _model, _device, _transforms
-    
-    if _model is None:
-        load_model()
-        
-    try:
-        # Pytorch PIL 변환
-        image = Image.open(BytesIO(image_bytes)).convert('RGB')
-        input_tensor = _transforms(image).unsqueeze(0).to(_device)
-        
-        with torch.no_grad():
-            outputs = _model(input_tensor)
-            
-            # 여기서 클래스 예측. (보통 클래스 0: AI, 클래스 1: REAL 혹은 역순일 수 있음)
-            # 여기서는 [REAL, AI] 순서의 폴더명(알파벳순)을 가정합니다. a, r -> ai: 0, real: 1
-            # 만약 Train할 때 DataFolder 기본값을 쓰면 'ai'가 0번 인덱스, 'real'이 1번 인덱스가 됩니다.
-            # 우리가 원하는 confidence는 AI 확률이므로 AI 인덱스의 Softmax 값을 취합니다.
-            probabilities = F.softmax(outputs, dim=1)
-            
-            # 폴더명 순서에 맞춰 ai가 0, real이 1인 경우
-            # AI일 확률:
-            ai_prob = probabilities[0][0].item() # 0번 인덱스가 'ai'라 가정
-            
-            predicted_idx = 1 if ai_prob >= 0.5 else 0
-            
-            return {
-                "model_name": "visual_anomaly",
-                "predicted_idx": predicted_idx,
-                "confidence": round(ai_prob, 4)
-            }
-            
-    except Exception as e:
-        print(f"Visual Anomaly prediction error: {e}")
+    global ai_detector
+
+    # 모델 로드 실패 시 더미 데이터 반환
+    if ai_detector is None:
         return {
-            "model_name": "visual_anomaly",
+            "model_name": "AI Image Detector",
             "predicted_idx": 0,
-            "confidence": 0.5,
-            "error": str(e)
+            "confidence": 0.0
         }
+
+    try:
+        # 바이트 배열을 PIL 이미지로 변환
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+        # 모델 추론 수행
+        result = ai_detector.predict(image)
+
+        # result 예시:
+        # {
+        #     "prediction": "AI-generated",
+        #     "confidence": 0.97,
+        #     "probability": 0.97
+        # }
+
+        p_ai = float(result.get("probability", 0.0))
+        confidence = float(result.get("confidence", p_ai))
+
+        # threshold는 필요에 따라 조정 가능
+        # 0.5는 기본 분류 기준, 실사용에서는 0.7~0.85 추천
+        predicted_idx = 1 if p_ai >= 0.5 else 0
+        print(p_ai, confidence)
+        return {
+            "model_name": "Visual anomaly",
+            "predicted_idx": predicted_idx,
+            "confidence": p_ai
+        }
+
+    except Exception as e:
+        print(f"Error in Visual anomaly prediction: {e}")
+
+        return {
+            "model_name": "Visual anomaly",
+            "predicted_idx": 0,
+            "confidence": 0.0
+        }
+
+
+if __name__ == "__main__":
+    load_model()

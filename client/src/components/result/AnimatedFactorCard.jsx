@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { COLORS } from "../../constants/colors";
-import { InfoCard } from "../common/InfoCard";
 import { getScoreColor, easeOutCubic } from "../../utils/utils";
 
 export function AnimatedFactorCard({ factor, index }) {
@@ -41,7 +40,6 @@ export function AnimatedFactorCard({ factor, index }) {
   }, [factor.score, index]);
 
   const dashOffset = circumference * (1 - displayScore / 100);
-
   return (
     <div
       className="p-8 rounded-[1.5rem] border shadow-sm flex flex-col"
@@ -58,12 +56,6 @@ export function AnimatedFactorCard({ factor, index }) {
           >
             {factor.title}
           </h3>
-          <p
-            className="text-xs font-bold uppercase mt-1"
-            style={{ color: COLORS.onSurfaceVariant, letterSpacing: "0.18em" }}
-          >
-            {factor.subtitle}
-          </p>
         </div>
 
         <div className="relative w-24 h-24 shrink-0">
