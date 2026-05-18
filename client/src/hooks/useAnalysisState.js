@@ -136,6 +136,8 @@ export function useAnalysisState() {
 
       const nextResult = {
         ...defaultResult,
+        rawPrediction: predictionObj,
+        individualPredictions: predictionObj.individual_predictions || [],
         factors: updatedFactors,
         summary: {
           ...defaultResult.summary,

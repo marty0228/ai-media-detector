@@ -7,6 +7,10 @@ import { generateResultPdf } from "../../utils/generateResultPdf";
 
 export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
   const reportRef = useRef(null);
+  const individualPredictions = result.individualPredictions || [];
+  const watermarkPrediction = individualPredictions.find(
+    (item) => item.model_name === "Water Mark",
+  );
 
   const sanitizeFileName = (name) => {
     return (name || "ai-detection-report")
@@ -242,6 +246,59 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
               </div>
             </div>
           </div>
+
+          {watermarkPrediction ? (
+            <div
+              className="p-6 rounded-[1.5rem] border shadow-sm"
+              style={{
+                backgroundColor: COLORS.surfaceContainerLowest,
+                borderColor: "rgba(193,199,203,0.1)",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h3
+                    className="text-2xl font-bold mb-1"
+                    style={{
+                      color: COLORS.primary,
+                      fontFamily: "Manrope, sans-serif",
+                    }}
+                  >
+                    워터마크 원본 결과
+                  </h3>
+                  <p
+                    className="text-sm break-keep"
+                    style={{ color: COLORS.onSurfaceVariant }}
+                  >
+                    백엔드가 실제로 돌린 워터마크 모델 출력입니다.
+                  </p>
+                </div>
+                <span
+                  className="px-3 py-1 rounded-full text-xs font-bold uppercase"
+                  style={{
+                    backgroundColor: COLORS.primaryFixed,
+                    color: COLORS.onPrimaryFixed,
+                    letterSpacing: "0.15em",
+                  }}
+                >
+                  debug
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                <InfoCard label="predicted_idx" value={String(watermarkPrediction.predicted_idx)} />
+                <InfoCard label="confidence" value={String(watermarkPrediction.confidence)} />
+                <InfoCard label="threshold" value={String(watermarkPrediction.threshold ?? watermarkPrediction.model_threshold ?? "-")} />
+                <InfoCard label="weights" value={watermarkPrediction.weights_path ? "loaded" : "unknown"} />
+              </div>
+
+              {watermarkPrediction.details?.boxes?.length ? (
+                <div className="mt-5 text-sm" style={{ color: COLORS.onSurfaceVariant }}>
+                  탐지 박스 수: <b>{watermarkPrediction.details.boxes.length}</b>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </section>
 
