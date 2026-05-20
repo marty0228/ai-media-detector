@@ -4,441 +4,655 @@ import io
 from typing import Any, Dict
 from PIL import Image, ExifTags, ImageFile
 
+# 손상되었거나 일부 잘린 이미지도 최대한 열 수 있도록 설정
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-# ---------------------------------------------------------
-# 1. 전역 상수 및 설정 정의
-# ---------------------------------------------------------
-IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
-AI_TEXT_KEYS = {'parameters', 'prompt', 'workflow', 'description', 'comment'}
-AI_VALUE_HINTS = {
-    'stable diffusion',
-    'midjourney',
-    'dall-e',
-    'dalle',
-    'firefly',
-    'novelai',
-    'comfyui',
-    'automatic1111',
-    'invokeai',
-    'c2pa',
-    'ai generated',
-    'generated',
+
+# ============================================================
+# 0. 전역 상수 및 기본 설정
+# ============================================================
+
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff")
+
+# AI 생성 이미지에서 자주 발견되는 PNG text chunk key
+AI_TEXT_KEYS = {
+    "parameters",
+    "prompt",
+    "workflow",
+    "description",
+    "comment",
 }
+
+# AI 생성 도구나 생성 흔적으로 볼 수 있는 문자열
+AI_VALUE_HINTS = {
+    "stable diffusion",
+    "midjourney",
+    "dall-e",
+    "dalle",
+    "firefly",
+    "novelai",
+    "comfyui",
+    "automatic1111",
+    "invokeai",
+    "c2pa",
+    "ai generated",
+    "generated",
+    "gemini",
+    "chatgpt",
+    "openai",
+}
+
+# PIL의 EXIF tag id를 사람이 읽을 수 있는 이름으로 변환하기 위한 매핑
 EXIF_TAGS = ExifTags.TAGS
 
 
-# ---------------------------------------------------------
-# 2. 범주형 데이터 정규화 헬퍼 함수
-# ---------------------------------------------------------
+# ============================================================
+# 1. 범주형 메타데이터 정규화 함수
+# ============================================================
+
 def normalize_camera_brand(make: str, model: str) -> str:
-    # 카메라 제조사 및 모델 문자열을 소문자 단일 브랜드명으로 일관되게 정규화
-    t = f"{make} {model}".strip().lower()
+    """
+    카메라 제조사(make), 모델명(model)을 통합하여
+    apple, samsung, canon, nikon 등 일반화된 카메라 브랜드로 변환한다.
 
-    if not t:
-        return 'none'
+    목적:
+    - EXIF에 저장된 제조사/모델 문자열은 기기마다 형태가 다르므로 그대로 쓰기 어렵다.
+    - 모델 학습에서는 원본 문자열보다 일반화된 camera_brand가 더 안정적이다.
+    """
 
-    for b in ['samsung', 'apple', 'canon', 'nikon', 'sony', 'fujifilm', 'xiaomi', 'huawei', 'google']:
-        if (
-            b in t
-            or (b == 'samsung' and (t.startswith('sm-') or t.startswith('s9')))
-            or (b == 'apple' and 'iphone' in t)
-            or (b == 'fujifilm' and 'fuji' in t)
-            or (b == 'google' and 'pixel' in t)
-        ):
-            return b
+    text = f"{make} {model}".strip().lower()
 
-    return 'other'
+    if not text:
+        return "none"
+
+    brand_rules = [
+        "samsung",
+        "apple",
+        "canon",
+        "nikon",
+        "sony",
+        "fujifilm",
+        "xiaomi",
+        "huawei",
+        "google",
+    ]
+
+    for brand in brand_rules:
+        if brand in text:
+            return brand
+
+        if brand == "samsung" and (text.startswith("sm-") or text.startswith("s9")):
+            return "samsung"
+
+        if brand == "apple" and "iphone" in text:
+            return "apple"
+
+        if brand == "fujifilm" and "fuji" in text:
+            return "fujifilm"
+
+        if brand == "google" and "pixel" in text:
+            return "google"
+
+    return "other"
 
 
 def normalize_software_type(software: str) -> str:
-    # 생성 또는 편집 소프트웨어 이름을 일반화된 카테고리로 분류
-    s = str(software).strip().lower()
+    """
+    EXIF Software 또는 PNG info에 남아 있는 software 문자열을
+    camera_fw, editor, ai, unknown, none 중 하나로 정규화한다.
 
-    if not s or s == 'none':
-        return 'none'
+    목적:
+    - Photoshop, Lightroom 등은 편집 도구로 분류
+    - Stable Diffusion, Midjourney, DALL-E 등은 AI 도구로 분류
+    - iPhone, Canon, Nikon 등은 카메라 펌웨어 계열로 분류
+    """
 
-    if any(k in s for k in ['photoshop', 'lightroom', 'gimp', 'snapseed']):
-        return 'editor'
+    software = str(software).strip().lower()
 
-    if any(
-        k in s
-        for k in [
-            'stable diffusion',
-            'midjourney',
-            'dall-e',
-            'dalle',
-            'firefly',
-            'novelai',
-            'comfyui',
-            'automatic1111',
-            'invokeai',
-            'leonardo',
-            'gemini',
-            'chatgpt',
-            'openai',
-        ]
-    ):
-        return 'ai'
+    if not software or software in ["none", "nan", "null"]:
+        return "none"
 
-    if s.startswith('s9') or s.startswith('sm-') or any(k in s for k in ['iphone', 'canon', 'nikon']):
-        return 'camera_fw'
+    editor_keywords = [
+        "photoshop",
+        "lightroom",
+        "gimp",
+        "snapseed",
+        "picsart",
+        "canva",
+        "paint",
+        "instagram",
+    ]
 
-    return 'unknown'
+    ai_keywords = [
+        "stable diffusion",
+        "midjourney",
+        "dall-e",
+        "dalle",
+        "firefly",
+        "novelai",
+        "comfyui",
+        "automatic1111",
+        "invokeai",
+        "leonardo",
+        "gemini",
+        "chatgpt",
+        "openai",
+    ]
+
+    camera_keywords = [
+        "iphone",
+        "ios",
+        "android",
+        "samsung",
+        "canon",
+        "nikon",
+        "sony",
+        "camera",
+    ]
+
+    if any(keyword in software for keyword in editor_keywords):
+        return "editor"
+
+    if any(keyword in software for keyword in ai_keywords):
+        return "ai"
+
+    if software.startswith("sm-") or software.startswith("s9"):
+        return "camera_fw"
+
+    if any(keyword in software for keyword in camera_keywords):
+        return "camera_fw"
+
+    return "unknown"
 
 
-# ---------------------------------------------------------
-# 3. 핵심 메타데이터 추출 메인 로직
-# ---------------------------------------------------------
-def extract_metadata(image_source, label=-1) -> Dict[str, Any]:
-    # 단일 이미지의 메타데이터를 추출하여 딕셔너리로 반환
-    filename = os.path.basename(image_source) if isinstance(image_source, str) else 'image_from_bytes'
+# ============================================================
+# 2. 메타데이터 추출 보조 함수
+# ============================================================
+
+def has_ai_prompt_like_text(info: Dict[str, Any]) -> bool:
+    """
+    PNG info, XMP, text chunk 안에 prompt나 AI 생성 도구 관련 문자열이 있는지 확인한다.
+    """
+
+    if not info:
+        return False
+
+    keys_text = " ".join(str(k).lower() for k in info.keys())
+    values_text = " ".join(str(v).lower() for v in info.values())
+    total_text = keys_text + " " + values_text
+
+    return any(keyword in total_text for keyword in AI_VALUE_HINTS) or bool(AI_TEXT_KEYS & set(keys_text.split()))
+
+
+def infer_source_type_from_path(image_path: str, label: int) -> str:
+    """
+    이미지 경로에서 세부 데이터 유형을 추출한다.
+
+    예시:
+    train_datasets/real/smartphone_original/a.jpg
+    -> real_smartphone_original
+
+    train_datasets/ai/ai_jpg_converted/a.jpg
+    -> ai_ai_jpg_converted
+
+    source_type은 이후 train/valid를 나눌 때 stratify 기준으로 사용된다.
+    """
+
+    norm_path = str(image_path).replace("\\", "/")
+    parts = norm_path.split("/")
+
+    label_name = "real" if label == 0 else "ai"
+
+    if "train_datasets" in parts:
+        idx = parts.index("train_datasets")
+        after = parts[idx + 1:]
+
+        if len(after) >= 2:
+            class_folder = after[0]
+            source_folder = after[1]
+
+            if class_folder in ["real", "ai"]:
+                return f"{class_folder}_{source_folder}"
+
+    return f"{label_name}_unknown"
+
+
+# ============================================================
+# 3. 단일 이미지 메타데이터 추출 함수
+# ============================================================
+
+def extract_metadata(image_source, label: int = -1) -> Dict[str, Any]:
+    """
+    단일 이미지에서 메타데이터 feature를 추출한다.
+
+    label:
+    - real 이미지: 0
+    - AI 이미지: 1
+    - 예측용 단일 이미지: -1
+
+    반환값:
+    - RandomForest 모델 학습/예측에 사용할 feature dictionary
+    """
+
+    filename = os.path.basename(image_source) if isinstance(image_source, str) else "image_from_bytes"
     ext = os.path.splitext(filename)[1].lower()
+
+    # ------------------------------------------------------------
+    # 3.1 기본 feature 초기화
+    # ------------------------------------------------------------
 
     res = dict.fromkeys(
         [
-            'has_exif',
-            'has_camera',
-            'has_png_chunk',
-            'has_prompt',
-            'has_xmp',
-            'has_make',
-            'has_model',
-            'has_datetime',
-            'has_gps',
-            'has_iso',
-            'has_exposure_time',
-            'has_fnumber',
-            'has_focal_length',
-            'has_orientation',
-            'has_color_space',
-            'file_size',
-            'width',
-            'height',
-            'channels',
-            'is_jpeg',
-            'is_png',
-            'is_webp',
-            'metadata_empty',
-            'exif_but_no_camera',
-            'camera_but_no_datetime',
-            'jpg_without_exif',
-            'png_with_exif',
-
-            # -------------------------------------------------
-            # 추가 feature 3개
-            # -------------------------------------------------
-            # EXIF 필드 개수
-            'exif_field_count',
-
-            # EXIF + PNG info + XMP 등 전체 메타데이터 key 개수
-            'metadata_key_count',
-
-            # PNG + EXIF 없음 + 카메라 없음 + 날짜 없음이면 스크린샷 성격으로 간주
-            'is_screenshot_like',
+            "has_exif",
+            "has_camera",
+            "has_png_chunk",
+            "has_prompt",
+            "has_xmp",
+            "has_make",
+            "has_model",
+            "has_datetime",
+            "has_gps",
+            "has_iso",
+            "has_exposure_time",
+            "has_fnumber",
+            "has_focal_length",
+            "has_orientation",
+            "has_color_space",
+            "file_size",
+            "width",
+            "height",
+            "channels",
+            "is_jpeg",
+            "is_png",
+            "is_webp",
+            "metadata_empty",
+            "exif_but_no_camera",
+            "camera_but_no_datetime",
+            "jpg_without_exif",
+            "png_with_exif",
+            "exif_field_count",
+            "metadata_key_count",
+            "is_screenshot_like",
         ],
         0,
     )
 
     res.update(
         {
-            'aspect_ratio': 0.0,
-            'mega_pixels': 0.0,
-            'size_per_megapixel': 0.0,
-            'make_raw': 'None',
-            'model_raw': 'None',
-            'camera_brand': 'none',
-            'software_raw': 'None',
-            'software_type': 'none',
-            'filename': filename,
-            'label': label,
+            "aspect_ratio": 0.0,
+            "mega_pixels": 0.0,
+            "size_per_megapixel": 0.0,
+            "make_raw": "None",
+            "model_raw": "None",
+            "camera_brand": "none",
+            "software_raw": "None",
+            "software_type": "none",
+            "filename": filename,
+            "filepath": str(image_source) if isinstance(image_source, str) else "",
+            "label": label,
         }
     )
 
     try:
+        # ------------------------------------------------------------
+        # 3.2 파일 크기 추출
+        # ------------------------------------------------------------
+
         if isinstance(image_source, str) and os.path.exists(image_source):
-            res['file_size'] = os.path.getsize(image_source)
+            res["file_size"] = os.path.getsize(image_source)
 
         source = io.BytesIO(image_source) if isinstance(image_source, bytes) else image_source
 
-        # =========================================================
-        # 3.1 파일 구조 및 기본 속성 추출
-        # =========================================================
         with Image.open(source) as img:
-            w, h = img.size
+            width, height = img.size
+            image_format = (img.format or "").upper()
 
-            image_format = (img.format or '').upper()
+            # ------------------------------------------------------------
+            # 3.3 이미지 기본 구조 feature
+            # ------------------------------------------------------------
 
-            res.update(
-                {
-                    'width': w,
-                    'height': h,
-                    'aspect_ratio': round(w / h, 6) if h else 0.0,
-                    'is_jpeg': int(image_format in ('JPEG', 'JPG') or ext in ('.jpg', '.jpeg')),
-                    'is_png': int(image_format == 'PNG' or ext == '.png'),
-                    'is_webp': int(image_format == 'WEBP' or ext == '.webp'),
-                }
-            )
+            res["width"] = int(width)
+            res["height"] = int(height)
+            res["aspect_ratio"] = round(width / height, 6) if height else 0.0
 
-            mp = (w * h) / 1_000_000
-            res['mega_pixels'] = round(mp, 6)
-            res['size_per_megapixel'] = round(res['file_size'] / mp, 6) if mp > 0 else 0.0
+            res["is_jpeg"] = int(image_format in ["JPEG", "JPG"] or ext in [".jpg", ".jpeg"])
+            res["is_png"] = int(image_format == "PNG" or ext == ".png")
+            res["is_webp"] = int(image_format == "WEBP" or ext == ".webp")
 
-            res['channels'] = {
-                '1': 1,
-                'L': 1,
-                'P': 1,
-                'RGB': 3,
-                'RGBA': 4,
-                'CMYK': 4,
-                'YCbCr': 3,
-                'LAB': 3,
-                'HSV': 3,
-                'I': 1,
-                'F': 1,
-            }.get(img.mode, 0)
+            mega_pixels = (width * height) / 1_000_000
+            res["mega_pixels"] = round(mega_pixels, 6)
 
-            # =========================================================
-            # 3.2 카메라 EXIF 태그 파싱
-            # =========================================================
+            if mega_pixels > 0:
+                res["size_per_megapixel"] = round(res["file_size"] / mega_pixels, 6)
+
+            mode_to_channels = {
+                "1": 1,
+                "L": 1,
+                "P": 1,
+                "RGB": 3,
+                "RGBA": 4,
+                "CMYK": 4,
+                "YCbCr": 3,
+                "LAB": 3,
+                "HSV": 3,
+                "I": 1,
+                "F": 1,
+            }
+
+            res["channels"] = mode_to_channels.get(img.mode, len(img.getbands()))
+
+            # ------------------------------------------------------------
+            # 3.4 EXIF 메타데이터 추출
+            # ------------------------------------------------------------
+
             exif = img.getexif()
 
             if exif:
-                res['has_exif'] = 1
-                res['exif_field_count'] = len(exif)
+                res["has_exif"] = 1
+                res["exif_field_count"] = len(exif)
 
-                for tag_id, val in exif.items():
-                    tag = EXIF_TAGS.get(tag_id, tag_id)
+                for tag_id, value in exif.items():
+                    tag_name = EXIF_TAGS.get(tag_id, tag_id)
 
-                    if tag == 'Make':
-                        res.update({'has_make': 1, 'make_raw': str(val).strip()})
+                    if tag_name == "Make":
+                        res["has_make"] = 1
+                        res["make_raw"] = str(value).strip()
 
-                    elif tag == 'Model':
-                        res.update({'has_model': 1, 'model_raw': str(val).strip()})
+                    elif tag_name == "Model":
+                        res["has_model"] = 1
+                        res["model_raw"] = str(value).strip()
 
-                    elif tag in ('DateTime', 'DateTimeOriginal', 'DateTimeDigitized'):
-                        res['has_datetime'] = 1
+                    elif tag_name in ["DateTime", "DateTimeOriginal", "DateTimeDigitized"]:
+                        res["has_datetime"] = 1
 
-                    elif tag == 'Software':
-                        res['software_raw'] = str(val).strip()
+                    elif tag_name == "Software":
+                        res["software_raw"] = str(value).strip()
 
-                    elif tag in ('ISOSpeedRatings', 'PhotographicSensitivity'):
-                        res['has_iso'] = 1
+                    elif tag_name in ["ISOSpeedRatings", "PhotographicSensitivity"]:
+                        res["has_iso"] = 1
 
-                    elif tag == 'ExposureTime':
-                        res['has_exposure_time'] = 1
+                    elif tag_name == "ExposureTime":
+                        res["has_exposure_time"] = 1
 
-                    elif tag == 'FNumber':
-                        res['has_fnumber'] = 1
+                    elif tag_name == "FNumber":
+                        res["has_fnumber"] = 1
 
-                    elif tag == 'FocalLength':
-                        res['has_focal_length'] = 1
+                    elif tag_name == "FocalLength":
+                        res["has_focal_length"] = 1
 
-                    elif tag == 'Orientation':
-                        res['has_orientation'] = 1
+                    elif tag_name == "Orientation":
+                        res["has_orientation"] = 1
 
-                    elif tag == 'ColorSpace':
-                        res['has_color_space'] = 1
+                    elif tag_name == "ColorSpace":
+                        res["has_color_space"] = 1
 
-                    elif tag == 'GPSInfo' and val:
-                        res['has_gps'] = 1
+                    elif tag_name == "GPSInfo" and value:
+                        res["has_gps"] = 1
 
-                res['has_camera'] = int(res['has_make'] or res['has_model'])
+                res["has_camera"] = int(res["has_make"] or res["has_model"])
 
-            # EXIF 필드 개수를 전체 메타데이터 key 개수에 반영
-            res['metadata_key_count'] += res['exif_field_count']
+            res["metadata_key_count"] += res["exif_field_count"]
 
-            # =========================================================
-            # 3.3 PNG/WEBP 내부 텍스트 청크 파싱
-            # =========================================================
+            # ------------------------------------------------------------
+            # 3.5 PNG/WEBP text chunk 및 info 추출
+            # ------------------------------------------------------------
+
             info = img.info or {}
             info_keys = {str(k).lower() for k in info.keys()}
 
-            # PNG info key 개수를 전체 메타데이터 key 개수에 반영
-            res['metadata_key_count'] += len(info_keys)
+            res["metadata_key_count"] += len(info_keys)
 
             if AI_TEXT_KEYS & info_keys:
-                res['has_png_chunk'] = 1
-                res['has_prompt'] = 1
+                res["has_png_chunk"] = 1
+                res["has_prompt"] = 1
 
-            for k, v in info.items():
-                kl = str(k).lower()
-                vt = str(v).strip()
+            for key, value in info.items():
+                key_lower = str(key).lower()
+                value_text = str(value).strip()
 
-                if kl in AI_TEXT_KEYS or (kl == 'software' and vt):
-                    res['has_png_chunk'] = 1
+                if key_lower in AI_TEXT_KEYS or (key_lower == "software" and value_text):
+                    res["has_png_chunk"] = 1
 
-                    if kl == 'software' and vt:
-                        res['software_raw'] = vt
+                    if key_lower == "software":
+                        res["software_raw"] = value_text
 
-                    if kl in AI_TEXT_KEYS and vt:
-                        res['has_prompt'] = 1
+                    if key_lower in AI_TEXT_KEYS and value_text:
+                        res["has_prompt"] = 1
 
-                if vt and any(h in vt.lower() for h in AI_VALUE_HINTS):
-                    res['has_png_chunk'] = 1
-                    res['has_prompt'] = 1
+                if value_text and any(hint in value_text.lower() for hint in AI_VALUE_HINTS):
+                    res["has_png_chunk"] = 1
+                    res["has_prompt"] = 1
 
-            # =========================================================
-            # 3.4 어도비 XMP 확장 메타데이터 파싱
-            # =========================================================
-            if hasattr(img, 'getxmp'):
-                xmp = img.getxmp()
+            # ------------------------------------------------------------
+            # 3.6 XMP 메타데이터 추출
+            # ------------------------------------------------------------
+
+            if hasattr(img, "getxmp"):
+                try:
+                    xmp = img.getxmp()
+                except Exception:
+                    xmp = None
 
                 if xmp:
-                    res['has_xmp'] = 1
+                    res["has_xmp"] = 1
 
-                    # XMP key 개수를 전체 메타데이터 key 개수에 반영
                     if isinstance(xmp, dict):
-                        res['metadata_key_count'] += len(xmp.keys())
+                        res["metadata_key_count"] += len(xmp.keys())
                     else:
-                        res['metadata_key_count'] += 1
+                        res["metadata_key_count"] += 1
 
-                    xt = str(xmp).lower()
+                    xmp_text = str(xmp).lower()
 
                     for tool in [
-                        'midjourney',
-                        'dall-e',
-                        'dalle',
-                        'firefly',
-                        'novelai',
-                        'stable diffusion',
-                        'comfyui',
+                        "midjourney",
+                        "dall-e",
+                        "dalle",
+                        "firefly",
+                        "novelai",
+                        "stable diffusion",
+                        "comfyui",
+                        "gemini",
+                        "chatgpt",
                     ]:
-                        if tool in xt:
-                            res['software_raw'] = tool.title() if tool not in ['dall-e', 'dalle'] else 'DALL-E'
+                        if tool in xmp_text:
+                            res["software_raw"] = tool.title()
                             break
 
-                    if any(h in xt for h in AI_VALUE_HINTS):
-                        res['has_prompt'] = 1
+                    if any(hint in xmp_text for hint in AI_VALUE_HINTS):
+                        res["has_prompt"] = 1
 
-        # =========================================================
-        # 3.5 추출된 데이터 파생 특징 계산 및 유효성 검증
-        # =========================================================
-        res['camera_brand'] = normalize_camera_brand(res['make_raw'], res['model_raw'])
-        res['software_type'] = normalize_software_type(res['software_raw'])
+        # ------------------------------------------------------------
+        # 3.7 파생 feature 생성
+        # ------------------------------------------------------------
 
-        md_sigs = [
-            res['has_exif'],
-            res['has_xmp'],
-            res['has_prompt'],
-            res['has_png_chunk'],
-            res['has_make'],
-            res['has_model'],
-            res['has_datetime'],
-            res['has_gps'],
-            res['has_iso'],
-            res['has_exposure_time'],
-        ]
+        res["camera_brand"] = normalize_camera_brand(res["make_raw"], res["model_raw"])
+        res["software_type"] = normalize_software_type(res["software_raw"])
 
-        res['metadata_empty'] = int(not any(md_sigs))
-        res['exif_but_no_camera'] = int(res['has_exif'] and not res['has_camera'])
-        res['camera_but_no_datetime'] = int(res['has_camera'] and not res['has_datetime'])
-        res['jpg_without_exif'] = int(res['is_jpeg'] and not res['has_exif'])
-        res['png_with_exif'] = int(res['is_png'] and res['has_exif'])
+        res["metadata_empty"] = int(
+            not any(
+                [
+                    res["has_exif"],
+                    res["has_xmp"],
+                    res["has_prompt"],
+                    res["has_png_chunk"],
+                    res["has_make"],
+                    res["has_model"],
+                    res["has_datetime"],
+                    res["has_gps"],
+                    res["has_iso"],
+                    res["has_exposure_time"],
+                ]
+            )
+        )
 
-        # ---------------------------------------------------------
-        # 추가 feature: 스크린샷 성격 이미지 판별
-        # ---------------------------------------------------------
-        # 실제 스크린샷은 PNG이면서 EXIF/카메라/촬영 날짜가 없는 경우가 많음.
-        # 이 feature는 "PNG + 메타데이터 없음 = 무조건 AI"로 학습되는 것을 줄이기 위한 보조 신호.
-        res['is_screenshot_like'] = int(
-            res['is_png']
-            and not res['has_exif']
-            and not res['has_camera']
-            and not res['has_datetime']
+        res["exif_but_no_camera"] = int(res["has_exif"] and not res["has_camera"])
+        res["camera_but_no_datetime"] = int(res["has_camera"] and not res["has_datetime"])
+        res["jpg_without_exif"] = int(res["is_jpeg"] and not res["has_exif"])
+        res["png_with_exif"] = int(res["is_png"] and res["has_exif"])
+
+        # 실제 스크린샷은 PNG이면서 EXIF, 카메라 정보, 촬영 시간이 없는 경우가 많다.
+        res["is_screenshot_like"] = int(
+            res["is_png"]
+            and not res["has_exif"]
+            and not res["has_camera"]
+            and not res["has_datetime"]
         )
 
     except Exception as e:
-        print(f'[WARN] {filename}: {e}')
+        print(f"[WARN] {filename}: {e}")
 
     return res
 
 
-# ---------------------------------------------------------
-# 4. 파일 입출력 및 일괄 변환 데이터셋 생성 유틸리티
-# ---------------------------------------------------------
-def collect_images_from_folder(folder_path, label):
-    # 폴더 내 모든 이미지를 순회하며 메타데이터 추출을 반복 적용
+# ============================================================
+# 4. 폴더 단위 이미지 수집 함수
+# ============================================================
+
+def collect_images_from_folder(folder_path, label: int):
+    """
+    지정된 폴더 아래의 모든 이미지 파일을 재귀적으로 탐색하여
+    메타데이터 feature row 목록을 생성한다.
+
+    하위 폴더 구조:
+    train_datasets/real/smartphone_original/...
+    train_datasets/ai/stable_diffusion/...
+    """
+
+    rows = []
+
     if not os.path.exists(folder_path):
-        return []
+        print(f"[경고] 폴더 없음: {folder_path}")
+        return rows
 
-    return [
-        extract_metadata(os.path.join(folder_path, f), label)
-        for f in os.listdir(folder_path)
-        if f.lower().endswith(IMAGE_EXTENSIONS)
-    ]
+    print(f"\n[이미지 수집 시작] folder_path={folder_path}, label={label}")
+
+    total_file_count = 0
+    image_file_count = 0
+    error_count = 0
+
+    for root, _, files in os.walk(folder_path):
+        for file in files:
+            total_file_count += 1
+
+            ext = os.path.splitext(file)[1].lower()
+
+            if ext not in IMAGE_EXTENSIONS:
+                continue
+
+            image_file_count += 1
+            image_path = os.path.join(root, file)
+
+            try:
+                metadata = extract_metadata(image_path, label=label)
+                metadata["filename"] = file
+                metadata["filepath"] = image_path
+                metadata["label"] = label
+                metadata["source_type"] = infer_source_type_from_path(image_path, label)
+
+                rows.append(metadata)
+
+            except Exception as e:
+                error_count += 1
+                print(f"[오류] {image_path} 처리 실패: {e}")
+
+    print(f"[이미지 수집 완료] {folder_path}")
+    print(f"- 전체 파일 수: {total_file_count}")
+    print(f"- 이미지 파일 수: {image_file_count}")
+    print(f"- 정상 처리 수: {len(rows)}")
+    print(f"- 오류 수: {error_count}")
+
+    return rows
 
 
-def save_to_csv(rows, output_file='metadata_dataset.csv'):
-    # 추출한 특징들 객체 배열을 머신러닝 학습이 가능하도록 CSV로 기록
+# ============================================================
+# 5. CSV 저장 함수
+# ============================================================
+
+def save_to_csv(rows, output_file="metadata_dataset.csv"):
+    """
+    추출한 메타데이터 row 목록을 CSV로 저장한다.
+    """
+
     if not rows:
-        return
+        print("[경고] 저장할 row가 없습니다.")
+        return None
 
     fieldnames = [
-        'filename',
-        'label',
+        "filename",
+        "filepath",
+        "source_type",
+        "label",
 
-        'has_exif',
-        'has_camera',
-        'has_png_chunk',
-        'has_prompt',
-        'has_xmp',
-        'has_make',
-        'has_model',
-        'has_datetime',
-        'has_gps',
-        'has_iso',
-        'has_exposure_time',
-        'has_fnumber',
-        'has_focal_length',
-        'has_orientation',
-        'has_color_space',
+        "has_exif",
+        "has_camera",
+        "has_png_chunk",
+        "has_prompt",
+        "has_xmp",
+        "has_make",
+        "has_model",
+        "has_datetime",
+        "has_gps",
+        "has_iso",
+        "has_exposure_time",
+        "has_fnumber",
+        "has_focal_length",
+        "has_orientation",
+        "has_color_space",
 
-        'make_raw',
-        'model_raw',
-        'camera_brand',
-        'software_raw',
-        'software_type',
+        "make_raw",
+        "model_raw",
+        "camera_brand",
+        "software_raw",
+        "software_type",
 
-        'file_size',
-        'width',
-        'height',
-        'aspect_ratio',
-        'channels',
-        'is_jpeg',
-        'is_png',
-        'is_webp',
-        'mega_pixels',
-        'size_per_megapixel',
+        "file_size",
+        "width",
+        "height",
+        "aspect_ratio",
+        "channels",
+        "is_jpeg",
+        "is_png",
+        "is_webp",
+        "mega_pixels",
+        "size_per_megapixel",
 
-        'metadata_empty',
-        'exif_but_no_camera',
-        'camera_but_no_datetime',
-        'jpg_without_exif',
-        'png_with_exif',
+        "metadata_empty",
+        "exif_but_no_camera",
+        "camera_but_no_datetime",
+        "jpg_without_exif",
+        "png_with_exif",
 
-        # -------------------------------------------------
-        # 추가 feature 3개
-        # -------------------------------------------------
-        'exif_field_count',
-        'metadata_key_count',
-        'is_screenshot_like',
+        "exif_field_count",
+        "metadata_key_count",
+        "is_screenshot_like",
     ]
 
-    with open(output_file, 'w', newline='', encoding='utf-8-sig') as file:
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
+    with open(output_file, "w", newline="", encoding="utf-8-sig") as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 
-    print(f'저장 완료: {output_file} ({len(rows)}개)')
+    print(f"저장 완료: {output_file} ({len(rows)}개)")
+    return output_file
 
+
+# ============================================================
+# 6. 단독 실행 시 전체 데이터셋 CSV 생성
+# ============================================================
 
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
+    dataset_dir = os.path.join(base_dir, "train_datasets")
 
-    data = (
-        collect_images_from_folder(os.path.join(base_dir, 'train_datasets', 'real'), 0)
-        + collect_images_from_folder(os.path.join(base_dir, 'train_datasets', 'ai'), 1)
-    )
+    real_dir = os.path.join(dataset_dir, "real")
+    ai_dir = os.path.join(dataset_dir, "ai")
 
-    save_to_csv(data, os.path.join(base_dir, 'model', 'metadata_dataset_expanded.csv'))
+    rows = []
+    rows += collect_images_from_folder(real_dir, 0)
+    rows += collect_images_from_folder(ai_dir, 1)
+
+    model_dir = os.path.join(base_dir, "model")
+    os.makedirs(model_dir, exist_ok=True)
+
+    output_path = os.path.join(model_dir, "metadata_dataset_expanded.csv")
+    save_to_csv(rows, output_path)
