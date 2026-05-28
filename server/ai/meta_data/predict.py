@@ -1,8 +1,12 @@
 import os
 import joblib
 import pandas as pd
-import mlflow
-import mlflow.sklearn
+
+try:
+    import mlflow
+    import mlflow.sklearn
+except ModuleNotFoundError:
+    mlflow = None
 
 MLFLOW_TRACKING_URI = "https://mlflow-server-7852824563.asia-northeast3.run.app"
 MLFLOW_EXPERIMENT_NAME = "AI_Media_Detector_MetaData"
@@ -32,6 +36,10 @@ def _load_local_model(model_path: str, columns_path: str) -> bool:
 
 def _load_mlflow_model() -> bool:
     global model, trained_columns
+
+    if mlflow is None:
+        print("Warning: MLflow is not installed. Falling back to local pickle.")
+        return False
 
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
     experiment = mlflow.get_experiment_by_name(MLFLOW_EXPERIMENT_NAME)
