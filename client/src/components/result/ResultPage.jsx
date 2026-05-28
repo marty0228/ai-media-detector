@@ -1,12 +1,16 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { COLORS } from "../../constants/colors";
 import { MaterialIcon } from "../common/MaterialIcon";
 import { InfoCard } from "../common/InfoCard";
 import { AnimatedFactorCard } from "./AnimatedFactorCard";
 import { generateResultPdf } from "../../utils/generateResultPdf";
+import ImageWithBoxes from "../common/ImageWithBoxes";
+import BoxCropPreview from "../common/BoxCropPreview";
 
 export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
   const reportRef = useRef(null);
+  const [selectedBox, setSelectedBox] = useState(null);
+  const [showBoxes, setShowBoxes] = useState(false);
   const individualPredictions = result.individualPredictions || [];
   const watermarkPrediction = individualPredictions.find(
     (item) => item.model_name === "Water Mark",
@@ -196,11 +200,98 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
               }}
             >
               {previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt="Uploaded preview"
-                  className="w-full max-h-[500px] object-contain"
-                />
+                <div style={{ width: '100%' }}>
+                  {!showBoxes ? (
+                    <img
+                      src={previewUrl}
+                      alt="Uploaded preview"
+                      className="w-full max-h-[500px] object-contain"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setShowBoxes(true)}
+                    />
+                  ) : (
+                    <div style={{ position: 'relative' }}>
+                      <ImageWithBoxes
+                        src={previewUrl}
+                        boxes={watermarkPrediction?.details?.boxes || []}
+                        onBoxClick={(box, idx) => setSelectedBox({ box, idx })}
+                        highlightIndex={selectedBox?.idx ?? null}
+                      />
+                      <button
+                        onClick={() => setShowBoxes(false)}
+                        style={{ position: 'absolute', top: 10, right: 10, zIndex: 40 }}
+                        className="px-3 py-1 rounded bg-white/90"
+                      >
+                        박스 숨기기
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedBox ? (
+                    <div
+                      onClick={() => setSelectedBox(null)}
+                      style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.6)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 60,
+                        padding: 20,
+                      }}
+                    >
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: 'min(95vw, 1100px)',
+                          maxHeight: '92vh',
+                          background: '#fff',
+                          padding: 18,
+                          borderRadius: 12,
+                          overflow: 'auto',
+                          display: 'flex',
+                          gap: 12,
+                        }}
+                      >
+                        <div style={{ flex: '1 1 60%', minWidth: 320 }}>
+                          <h3 style={{ marginBottom: 8 }}>검출 영역 미리보기</h3>
+                          <BoxCropPreview src={previewUrl} box={selectedBox.box} scale={3} maxWidth={720} />
+                        </div>
+
+                        <div style={{ flex: '1 1 40%', minWidth: 220, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <h3 style={{ marginBottom: 6 }}>상세 정보</h3>
+                          <div style={{ fontSize: 14 }}>
+                            <div><b>신뢰도:</b> {Math.round((selectedBox.box.confidence ?? selectedBox.box.conf ?? 0) * 10000) / 100}%</div>
+                            <div><b>인덱스:</b> {selectedBox.idx}</div>
+                            <div><b>패스:</b> {selectedBox.box.pass ?? '-'}</div>
+                            <div style={{ marginTop: 6 }}><b>좌표 (x1,y1,x2,y2):</b></div>
+                            <div style={{ fontFamily: 'monospace', fontSize: 13 }}>{(selectedBox.box.xyxy || []).map(v => Math.round(v)).join(', ')}</div>
+                            <div style={{ marginTop: 8 }}>
+                              <button onClick={() => setSelectedBox(null)} className="px-4 py-2 rounded bg-gray-200 mr-2">닫기</button>
+                              <button
+                                onClick={() => {
+                                  const boxes = watermarkPrediction?.details?.boxes || [];
+                                  const nextIdx = (selectedBox.idx + 1) % boxes.length;
+                                  setSelectedBox({ box: boxes[nextIdx], idx: nextIdx });
+                                }}
+                                className="px-4 py-2 rounded bg-blue-500 text-white mr-2"
+                              >다음</button>
+                              <button
+                                onClick={() => {
+                                  const boxes = watermarkPrediction?.details?.boxes || [];
+                                  const prevIdx = (selectedBox.idx - 1 + boxes.length) % boxes.length;
+                                  setSelectedBox({ box: boxes[prevIdx], idx: prevIdx });
+                                }}
+                                className="px-4 py-2 rounded bg-blue-200"
+                              >이전</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center p-8">
                   <div
