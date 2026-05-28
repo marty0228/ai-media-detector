@@ -11,13 +11,18 @@ except ImportError:
 model = None
 weights_path = None
 prediction_threshold = float(os.getenv("WATERMARK_THRESHOLD", "0.5"))
-decision_threshold = float(os.getenv("WATERMARK_DECISION_THRESHOLD", "0.03"))
+# 기본 결정 임계값을 너무 낮게 잡으면 작은 출력도 유효로 처리됩니다. 빠른 수정으로 기본값을 상향합니다.
+decision_threshold = float(os.getenv("WATERMARK_DECISION_THRESHOLD", "0.15"))
 roi_fraction = float(os.getenv("WATERMARK_ROI_FRACTION", "0.45"))
 roi_resize = float(os.getenv("WATERMARK_ROI_RESIZE", "1.5"))
 roi_fractions = [float(v) for v in os.getenv("WATERMARK_ROI_FRACTIONS", "0.65,0.45,0.30").split(",") if v.strip()]
 roi_resizes = [float(v) for v in os.getenv("WATERMARK_ROI_RESIZES", "2.0,1.5,1.0").split(",") if v.strip()]
 corner_fractions = [float(v) for v in os.getenv("WATERMARK_CORNER_FRACTIONS", "0.15,0.12,0.10").split(",") if v.strip()]
 corner_resizes = [float(v) for v in os.getenv("WATERMARK_CORNER_RESIZES", "8.0,7.0,6.0").split(",") if v.strip()]
+# 코너 박스 보정 파라미터(환경변수로 조정 가능)
+corner_base = float(os.getenv("WATERMARK_CORNER_BASE", "0.75"))
+corner_multiplier = float(os.getenv("WATERMARK_CORNER_MULTIPLIER", "0.2"))
+corner_max = float(os.getenv("WATERMARK_CORNER_MAX", "0.95"))
 
 BASE_PATH = Path(__file__).resolve().parent
 PRIMARY_WEIGHTS = BASE_PATH / "runs" / "detect" / "finetune_gemini_v1" / "weights" / "best.pt"
@@ -165,7 +170,8 @@ def predict(image_bytes: bytes) -> dict:
         best_corner_conf = float(best_corner_box["confidence"]) if best_corner_box else 0.0
 
         if best_corner_box:
-            calibrated_confidence = max(0.90, min(0.99, 0.90 + (best_corner_conf * 1.5)))
+            # 코너 박스 보정을 덜 공격적으로 적용: 기본값(base) + 작은 멀티플러
+            calibrated_confidence = max(corner_base, min(corner_max, corner_base + (best_corner_conf * corner_multiplier)))
             predicted_idx = 1
             confidence_mode = "corner-calibrated"
         elif max_conf >= decision_threshold:
