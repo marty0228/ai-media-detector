@@ -10,7 +10,7 @@ except ImportError:
 
 model = None
 weights_path = None
-prediction_threshold = float(os.getenv("WATERMARK_THRESHOLD", "0.5"))
+prediction_threshold = float(os.getenv("WATERMARK_THRESHOLD", "0.25"))
 # 기본 결정 임계값을 너무 낮게 잡으면 작은 출력도 유효로 처리됩니다. 빠른 수정으로 기본값을 상향합니다.
 decision_threshold = float(os.getenv("WATERMARK_DECISION_THRESHOLD", "0.15"))
 roi_fraction = float(os.getenv("WATERMARK_ROI_FRACTION", "0.45"))
@@ -19,6 +19,8 @@ roi_fractions = [float(v) for v in os.getenv("WATERMARK_ROI_FRACTIONS", "0.65,0.
 roi_resizes = [float(v) for v in os.getenv("WATERMARK_ROI_RESIZES", "2.0,1.5,1.0").split(",") if v.strip()]
 corner_fractions = [float(v) for v in os.getenv("WATERMARK_CORNER_FRACTIONS", "0.15,0.12,0.10").split(",") if v.strip()]
 corner_resizes = [float(v) for v in os.getenv("WATERMARK_CORNER_RESIZES", "8.0,7.0,6.0").split(",") if v.strip()]
+# 작은 잡음 박스를 줄이기 위한 최소 면적 비율
+min_box_area_ratio = float(os.getenv("WATERMARK_MIN_BOX_AREA_RATIO", "0.003"))
 # 코너 박스 보정 파라미터(환경변수로 조정 가능)
 corner_base = float(os.getenv("WATERMARK_CORNER_BASE", "0.75"))
 corner_multiplier = float(os.getenv("WATERMARK_CORNER_MULTIPLIER", "0.2"))
@@ -52,9 +54,10 @@ def load_model():
     )
 
 
-def _collect_results(results, x_offset: float = 0.0, y_offset: float = 0.0) -> tuple[float, list]:
+def _collect_results(results, image_width: int, image_height: int, x_offset: float = 0.0, y_offset: float = 0.0) -> tuple[float, list]:
     max_conf = 0.0
     boxes = []
+    image_area = float(image_width * image_height) if image_width and image_height else 1.0
 
     for r in results:
         if len(r.boxes) == 0:
@@ -64,12 +67,22 @@ def _collect_results(results, x_offset: float = 0.0, y_offset: float = 0.0) -> t
         max_conf = max(max_conf, result_max)
 
         for box, conf in zip(r.boxes.xyxy.tolist(), r.boxes.conf.tolist()):
+            x1 = float(box[0] + x_offset)
+            y1 = float(box[1] + y_offset)
+            x2 = float(box[2] + x_offset)
+            y2 = float(box[3] + y_offset)
+            box_width = max(0.0, x2 - x1)
+            box_height = max(0.0, y2 - y1)
+            box_area = box_width * box_height
+            if box_area < image_area * min_box_area_ratio:
+                continue
+
             boxes.append({
                 "xyxy": [
-                    round(float(box[0] + x_offset), 2),
-                    round(float(box[1] + y_offset), 2),
-                    round(float(box[2] + x_offset), 2),
-                    round(float(box[3] + y_offset), 2),
+                    round(x1, 2),
+                    round(y1, 2),
+                    round(x2, 2),
+                    round(y2, 2),
                 ],
                 "confidence": round(float(conf), 4),
             })
@@ -95,8 +108,8 @@ def _is_corner_watermark_candidate(box: dict, image_width: int, image_height: in
 
     return (
         box.get("pass", "").startswith("corner_")
-        and center_x >= image_width * 0.55
-        and center_y >= image_height * 0.55
+        and center_x >= image_width * 0.70
+        and center_y >= image_height * 0.70
         and box_area <= image_area * 0.12
     )
 
@@ -151,8 +164,14 @@ def predict(image_bytes: bytes) -> dict:
         max_conf = 0.0
         boxes = []
         for pass_name, pass_image, x_offset, y_offset in search_passes:
-            pass_results = model(_prep_roi(pass_image), conf=0.005, verbose=False)
-            pass_max_conf, pass_boxes = _collect_results(pass_results, x_offset=x_offset, y_offset=y_offset)
+            pass_results = model(_prep_roi(pass_image), conf=prediction_threshold, verbose=False)
+            pass_max_conf, pass_boxes = _collect_results(
+                pass_results,
+                width,
+                height,
+                x_offset=x_offset,
+                y_offset=y_offset,
+            )
 
             if pass_max_conf > max_conf:
                 max_conf = pass_max_conf

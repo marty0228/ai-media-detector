@@ -125,7 +125,10 @@ export function useAnalysisState() {
             };
           }
 
-        const score = Math.round(parseFloat(indPred.confidence) * 100);
+        const predictionConfidence = parseFloat(indPred.confidence);
+        const score = Number(indPred.predicted_idx) === 1
+          ? Math.round(predictionConfidence * 100)
+          : 0;
 
         return {
           ...factor,
