@@ -1,7 +1,16 @@
 import os
 import joblib
 import numpy as np
+
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report,
+)
 
 from ai.water_mark.predict import predict as predict_water_mark
 from ai.meta_data.predict import predict as predict_meta_data
@@ -11,18 +20,22 @@ from ai.visual_anomaly.predict import predict as predict_visual_anomaly
 
 from ai.water_mark.predict import load_model as load_water_mark
 from ai.meta_data.predict import load_model as load_meta_data
-from ai.external_search.predict import load_model as laod_external_search
+from ai.external_search.predict import load_model as load_external_search
 from ai.forensic_analysis.predict import load_model as load_forensic_analysis
 from ai.visual_anomaly.predict import load_model as load_visual_anomaly
-
 
 from ai.ansbel_model.predict import build_feature_vector, FEATURE_ORDER
 
 
 BASE_DIR = os.path.dirname(__file__)
 
+# 학습 데이터 폴더
 AI_DATA_DIR = os.path.join(BASE_DIR, "data", "ai")
 REAL_DATA_DIR = os.path.join(BASE_DIR, "data", "real")
+
+# 검증 데이터 폴더
+VAL_AI_DATA_DIR = os.path.join(BASE_DIR, "data", "val_ai")
+VAL_REAL_DATA_DIR = os.path.join(BASE_DIR, "data", "val_real")
 
 MODEL_SAVE_PATH = os.path.join(BASE_DIR, "ensemble_model.pkl")
 
@@ -51,14 +64,16 @@ def collect_image_paths(directory, label):
             continue
 
         image_path = os.path.join(directory, filename)
-        samples.append((image_path, label))
+
+        if os.path.isfile(image_path):
+            samples.append((image_path, label))
 
     return samples
 
 
 def safe_run_predict(predict_func, image_bytes, model_name):
     """
-    개별 모델 predict가 실패해도 학습 전체가 멈추지 않도록 처리.
+    개별 모델 predict가 실패해도 전체 학습/검증이 멈추지 않도록 처리.
     """
 
     try:
@@ -122,22 +137,32 @@ def predict_individual_models(image_bytes):
     return individual_results
 
 
-def build_training_dataset():
+def build_dataset(ai_dir, real_dir, dataset_name="Dataset"):
+    """
+    ai_dir, real_dir 폴더에서 이미지를 읽고,
+    각 이미지에 대해 5개 개별 모델의 출력값을 feature vector로 변환한다.
+
+    label:
+    - AI 이미지: 1
+    - Real 이미지: 0
+    """
+
     samples = []
 
-    samples.extend(collect_image_paths(AI_DATA_DIR, label=1))
-    samples.extend(collect_image_paths(REAL_DATA_DIR, label=0))
+    samples.extend(collect_image_paths(ai_dir, label=1))
+    samples.extend(collect_image_paths(real_dir, label=0))
 
     if not samples:
-        print("[오류] 학습할 이미지가 없습니다.")
-        print(f"AI 이미지 폴더: {AI_DATA_DIR}")
-        print(f"Real 이미지 폴더: {REAL_DATA_DIR}")
+        print(f"[오류] {dataset_name} 이미지가 없습니다.")
+        print(f"AI 이미지 폴더: {ai_dir}")
+        print(f"Real 이미지 폴더: {real_dir}")
         return None, None
 
     ai_count = sum(1 for _, label in samples if label == 1)
     real_count = sum(1 for _, label in samples if label == 0)
 
-    print("=== Dataset Info ===")
+    print()
+    print(f"=== {dataset_name} Info ===")
     print(f"총 이미지 수: {len(samples)}")
     print(f"AI 이미지 수: {ai_count}")
     print(f"Real 이미지 수: {real_count}")
@@ -167,21 +192,130 @@ def build_training_dataset():
             print(f"  reason: {e}")
 
     if not X:
-        print("[오류] 모든 이미지 예측에 실패했습니다.")
+        print(f"[오류] {dataset_name}의 모든 이미지 예측에 실패했습니다.")
         return None, None
 
     return np.array(X, dtype=float), np.array(y, dtype=int)
 
 
+def evaluate_meta_model(model):
+    """
+    val_ai, val_real 폴더를 읽어서 학습된 앙상블 모델을 검증한다.
+    """
+
+    print()
+    print("=== Validation Start ===")
+
+    X_val, y_val = build_dataset(
+        VAL_AI_DATA_DIR,
+        VAL_REAL_DATA_DIR,
+        dataset_name="Validation Dataset",
+    )
+
+    if X_val is None or y_val is None:
+        print("[경고] 검증 데이터가 없어 검증을 건너뜁니다.")
+        return
+
+    unique_classes, counts = np.unique(y_val, return_counts=True)
+    class_distribution = dict(zip(unique_classes, counts))
+
+    print()
+    print("=== Validation Data ===")
+    print(f"X_val shape: {X_val.shape}")
+    print(f"y_val shape: {y_val.shape}")
+    print(f"Class distribution: {class_distribution}")
+
+    if len(unique_classes) < 2:
+        print()
+        print("[경고] 검증 데이터에 한 클래스만 존재합니다.")
+        print(f"현재 검증 클래스: {unique_classes}")
+        print("val_ai와 val_real 폴더에 각각 최소 1개 이상의 이미지가 있어야 지표가 의미 있습니다.")
+
+    y_pred = model.predict(X_val)
+
+    if hasattr(model, "predict_proba"):
+        y_prob = model.predict_proba(X_val)[:, 1]
+    else:
+        y_prob = None
+
+    accuracy = accuracy_score(y_val, y_pred)
+    precision = precision_score(y_val, y_pred, zero_division=0)
+    recall = recall_score(y_val, y_pred, zero_division=0)
+    f1 = f1_score(y_val, y_pred, zero_division=0)
+
+    cm = confusion_matrix(y_val, y_pred, labels=[0, 1])
+
+    print()
+    print("=== Validation Result ===")
+    print(f"Accuracy : {accuracy:.4f}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall   : {recall:.4f}")
+    print(f"F1-score : {f1:.4f}")
+
+    print()
+    print("Confusion Matrix")
+    print("labels: 0=real, 1=ai")
+    print("[[TN FP]")
+    print(" [FN TP]]")
+    print(cm)
+
+    tn, fp, fn, tp = cm.ravel()
+
+    print()
+    print(f"TN: {tn}")
+    print(f"FP: {fp}")
+    print(f"FN: {fn}")
+    print(f"TP: {tp}")
+
+    print()
+    print("Classification Report")
+    print(
+        classification_report(
+            y_val,
+            y_pred,
+            labels=[0, 1],
+            target_names=["real", "ai"],
+            zero_division=0,
+        )
+    )
+
+    print()
+    print("=== Validation Samples ===")
+
+    for i in range(len(y_val)):
+        if y_prob is not None:
+            print(
+                f"[{i + 1}] true={y_val[i]}, pred={y_pred[i]}, ai_prob={y_prob[i]:.4f}"
+            )
+        else:
+            print(
+                f"[{i + 1}] true={y_val[i]}, pred={y_pred[i]}"
+            )
+
+
 def train_meta_model():
-    
+    """
+    1. 개별 모델 로드
+    2. data/ai, data/real로 앙상블 메타 모델 학습
+    3. ensemble_model.pkl 저장
+    4. data/val_ai, data/val_real로 검증
+    """
+
+    print("=== Load Individual Models ===")
+
     load_forensic_analysis()
     load_meta_data()
     load_visual_anomaly()
-    laod_external_search()
+    load_external_search()
     load_water_mark()
-    
-    X, y = build_training_dataset()
+
+    print("Individual models loaded.")
+
+    X, y = build_dataset(
+        AI_DATA_DIR,
+        REAL_DATA_DIR,
+        dataset_name="Training Dataset",
+    )
 
     if X is None or y is None:
         return
@@ -223,6 +357,8 @@ def train_meta_model():
 
     print()
     print(f"Model saved successfully to: {MODEL_SAVE_PATH}")
+
+    evaluate_meta_model(model)
 
 
 if __name__ == "__main__":
