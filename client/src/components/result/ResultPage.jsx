@@ -20,7 +20,7 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
   const isAiResult =
     Number(finalPrediction.predicted_idx) === 1 ||
     result.summary.verdict?.toLowerCase().includes("ai");
-  const summaryCardColor = isAiResult ? COLORS.error : COLORS.primary;
+  const summaryCardColor = isAiResult ? COLORS.error : "#16a34a";
   const summaryAccentColor = isAiResult
     ? COLORS.errorContainer
     : COLORS.secondaryFixedDim;
