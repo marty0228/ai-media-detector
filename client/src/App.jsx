@@ -5,6 +5,7 @@ import { useExternalFonts } from "./hooks/useExternalFonts";
 import { useAnalysisState } from "./hooks/useAnalysisState";
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
+import { AnalysisLoading } from "./components/common/AnalysisLoading";
 import { UploadPage } from "./components/upload/UploadPage";
 import { ResultPage } from "./components/result/ResultPage";
 
@@ -93,7 +94,9 @@ export default function App() {
         />
       )}
 
-      <Footer />
+      <Footer isDarkMode={isDarkMode} />
+
+      {isAnalyzing && <AnalysisLoading />}
     </div>
   );
 }

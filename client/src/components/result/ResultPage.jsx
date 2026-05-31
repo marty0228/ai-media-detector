@@ -15,6 +15,15 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
   const watermarkPrediction = individualPredictions.find(
     (item) => item.model_name === "Water Mark",
   );
+  const finalPrediction =
+    result.rawPrediction?.final_prediction || result.rawPrediction || {};
+  const isAiResult =
+    Number(finalPrediction.predicted_idx) === 1 ||
+    result.summary.verdict?.toLowerCase().includes("ai");
+  const summaryCardColor = isAiResult ? COLORS.error : COLORS.primary;
+  const summaryAccentColor = isAiResult
+    ? COLORS.errorContainer
+    : COLORS.secondaryFixedDim;
 
   const sanitizeFileName = (name) => {
     return (name || "ai-detection-report")
@@ -115,7 +124,7 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
 
           <div
             className="text-white p-8 rounded-[1.5rem] flex items-center gap-8 min-w-[320px] shadow-xl"
-            style={{ backgroundColor: COLORS.primary }}
+            style={{ backgroundColor: summaryCardColor }}
           >
             <div>
               <span
@@ -135,7 +144,7 @@ export function ResultPage({ result, fileInfo, previewUrl, isDarkMode }) {
             <div className="text-sm font-medium leading-tight">
               <span
                 className="block font-bold"
-                style={{ color: COLORS.secondaryFixedDim }}
+                style={{ color: summaryAccentColor }}
               >
                 {result.summary.verdict}
               </span>
